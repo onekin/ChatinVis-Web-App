@@ -1,0 +1,124 @@
+MindInVis - Estructura del Proyecto
+=====================================
+
+MindInVis/
+│
+├── client/                          # Frontend React + Vite
+│   ├── public/                      # Archivos estáticos
+│   ├── src/
+│   │   ├── assets/                  # Recursos (imágenes, fuentes)
+│   │   │   ├── fonts/
+│   │   │   └── images/
+│   │   ├── components/              # Componentes React
+│   │   │   ├── common/             # Componentes reutilizables
+│   │   │   ├── mindmap/            # Componentes del mind map
+│   │   │   ├── modals/             # Modales (configuración, ayuda)
+│   │   │   └── sidebar/            # Barra lateral con controles
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── services/                # Servicios de comunicación API
+│   │   ├── store/                   # Estado global (Zustand)
+│   │   ├── styles/                  # Estilos globales
+│   │   └── utils/                   # Utilidades del cliente
+│   ├── package.json
+│   ├── vite.config.js
+│   └── README.md
+│
+├── server/                          # Backend Node.js + Express
+│   ├── src/
+│   │   ├── controllers/            # Controladores de rutas
+│   │   ├── services/               # Lógica de negocio
+│   │   │   ├── llm/               # Servicios LLM
+│   │   │   │   ├── LLMManager.js
+│   │   │   │   ├── PromptBuilder.js
+│   │   │   │   └── LLMClient.js
+│   │   │   ├── mindmap/           # Servicios de mind map
+│   │   │   │   └── MindmapManager.js
+│   │   │   ├── logging/           # Logging y auditoría
+│   │   │   │   └── LogManager.js
+│   │   │   └── storage/           # Gestión de configuración
+│   │   │       ├── ModelManager.js
+│   │   │       └── ParameterManager.js
+│   │   ├── models/                # Modelos de datos
+│   │   ├── routes/                # Definición de rutas API
+│   │   ├── middleware/            # Middleware (auth, validación)
+│   │   ├── config/                # Configuración (DB, LLM)
+│   │   └── utils/                 # Utilidades del servidor
+│   ├── package.json
+│   ├── .env.example
+│   └── README.md
+│
+├── shared/                          # Código compartido
+│   ├── constants/                   # Constantes compartidas
+│   │   ├── IconsMap.js
+│   │   ├── PromptStyles.js
+│   │   └── ModelDefaultValues.js
+│   ├── types/                       # Definiciones de tipos
+│   └── utils/                       # Utilidades compartidas
+│   ├── package.json
+│   └── README.md
+│
+├── database/                        # Migraciones y seeds
+│   ├── migrations/
+│   └── seeds/
+│
+├── docs/                            # Documentación
+│   ├── ARCHITECTURE.md             # Arquitectura del sistema
+│   └── MIGRATION.md                # Guía de migración desde ChatInVis
+│
+├── .gitignore
+├── package.json                     # Root package.json (workspace)
+├── README.md                        # Documentación principal
+└── STRUCTURE.txt                    # Este archivo
+
+Archivos totales: 13 archivos de configuración y documentación
+Directorios totales: 38 directorios
+
+
+COMPONENTES MIGRADOS DESDE CHATINVIS
+=====================================
+
+Server Services (de ChatInVis Extension):
+├── LLMManager.js              ← app/scripts/background/LLMManagerBackground.js
+├── MindmapManager.js          ← app/scripts/chatinviz/MindmapManager.js
+├── PromptBuilder.js           ← app/scripts/chatinviz/PromptBuilder.js
+├── LLMClient.js               ← app/scripts/llm/LLMClient.js
+├── LogManager.js              ← app/scripts/background/LogManager.js
+├── ModelManager.js            ← app/scripts/background/ModelManager.js
+└── ParameterManager.js        ← app/scripts/background/ParameterManager.js
+
+Shared Constants (de ChatInVis Extension):
+├── IconsMap.js                ← app/scripts/chatinviz/IconsMap.js
+├── PromptStyles.js            ← app/scripts/chatinviz/PromptStyles.js
+└── ModelDefaultValues.js      ← app/scripts/chatinviz/ModelDefaultValues.js
+
+Models (de ChatInVis Extension):
+├── Problem.js                 ← app/scripts/chatinviz/model/Problem.js
+├── Intervention.js            ← app/scripts/chatinviz/model/Intervention.js
+└── Consequence.js             ← app/scripts/chatinviz/model/Consequence.js
+
+Utils (de ChatInVis Extension):
+├── FileUtils.js               ← app/scripts/utils/FileUtils.js
+└── LLMTextUtils.js            ← app/scripts/utils/LLMTextUtils.js
+
+
+STACK TECNOLÓGICO
+=================
+
+Frontend:
+- React 18
+- Vite (build tool)
+- Zustand (state management)
+- D3.js/Vis.js (visualización de mind maps)
+- Axios (HTTP client)
+- TanStack Query (data fetching)
+
+Backend:
+- Node.js + Express
+- LangChain (integración LLM)
+- PostgreSQL/MongoDB (base de datos)
+- JWT (autenticación)
+- Winston (logging)
+
+APIs LLM:
+- OpenAI (GPT-4, GPT-3.5-turbo)
+- Anthropic (Claude 2.0)
