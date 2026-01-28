@@ -1,0 +1,130 @@
+.child-options-popup {
+  position: absolute;
+  top: 100%;
+  right: -15px;
+  margin-top: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  z-index: 9999;
+  width: 280px;
+  animation: popupFadeIn 0.2s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.child-options-popup::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 20px;
+  transform: rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.child-options-popup .popup-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  z-index: 1;
+}
+
+.child-options-popup .popup-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.child-options-popup .popup-content {
+  padding: 16px;
+  padding-right: 36px;
+}
+
+.child-options-popup .popup-title {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.child-options-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.child-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.child-option-btn:hover {
+  border-color: #8b5cf6;
+  background: #faf5ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+}
+
+.child-option-btn .option-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.child-option-btn .option-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.ai-option:hover {
+  border-color: #8b5cf6;
+}
+
+.manual-option:hover {
+  border-color: #10b981;
+}
+
+.ai-option:hover .option-icon {
+  filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.5));
+}
+
+.manual-option:hover .option-icon {
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
+}

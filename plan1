@@ -1,0 +1,119 @@
+
+     Fase 1: Reestructurar Gestión de Estado (CRÍTICO)
+
+
+     Archivo: Editor.jsx
+     - Eliminar useRef para rootNode y usar useState con estructura inmutable
+     - Implementar useReducer para manejar todas las acciones del editor (add, delete, edit, 
+     move, updateProperties)
+     - Crear tipos de acciones claros: ADD_NODE, DELETE_NODE, UPDATE_NODE, MOVE_NODE, 
+     UPDATE_PROPERTIES
+     - Implementar funciones helper inmutables para actualizar el árbol sin mutaciones directas
+     - Eliminar todas las llamadas a setRender({}) (anti-patrón)
+
+     Fase 2: Corregir Bug Crítico de Duplicación (CRÍTICO)
+
+     Archivo: Editor.jsx - handleSubmit
+     - Añadir verificación para evitar generar nodos hijos si el nodo ya tiene hijos
+     - Implementar flag hasGeneratedChildren en el modelo MindMapNode
+     - Modificar lógica para solo generar cuando sea la primera edición del nodo
+
+     Fase 3: Mejorar Modelo de Datos (CRÍTICO)
+
+     Archivo: MindMapNode.js
+     - Eliminar referencia circular parent (solo mantener en estructura de árbol en Editor)
+     - Añadir propiedades: hasGeneratedChildren, createdAt, lastModified
+     - Corregir método addChilden (typo) o eliminarlo si no se usa
+     - Añadir validación en fromJSON para datos corruptos
+     - Mejorar método toJSON para incluir todas las propiedades visuales
+
+     Fase 4: Refactorizar Sistema de Edición y Selección (ALTO)
+
+     Archivo: Editor.jsx
+     - Separar lógica de selección (1 clic) vs edición (doble clic)
+     - Usar onDoubleClick en lugar de e.detail === 2
+     - Guardar ID del nodo seleccionado en lugar de referencia completa
+     - Implementar función findNodeById reutilizable para búsquedas
+     - Sincronizar nodeProperties con el nodo real usando useEffect
+
+     Fase 5: Arreglar Drag and Drop (CRÍTICO)
+
+     Archivo: Editor.jsx
+     - Calcular offset considerando scroll del canvas: canvasRef.current.scrollLeft/scrollTop
+     - Añadir user-select: none durante drag
+     - Implementar cleanup robusto de estado en onMouseLeave y onMouseUp
+     - Añadir cursor grabbing al canvas durante drag
+     - Prevenir inicio de drag durante edición de forma más robusta
+
+     Fase 6: Optimizar Renderizado (ALTO)
+
+     Archivos: Node.jsx, ConnectionLine.jsx, Editor.jsx
+     - Envolver Node y ConnectionLine con React.memo
+     - Usar useMemo para cálculos pesados en ConnectionLine (ángulos, intersecciones)
+     - Implementar useMemo para renderNodes con dependencias apropiadas
+     - Optimizar re-renders usando comparación de props en React.memo
+     - Virtualizar nodos si el árbol es muy grande (opcional)
+
+     Fase 7: Eliminar Código Duplicado (MEDIO)
+
+     Archivo: Editor.jsx
+     - Crear función helper traverseAndUpdateNode(tree, nodeId, updateFn) reutilizable
+     - Usar esta función en: handlePropertyChange, handleSubmit, handleAddNode, 
+     handleDeleteNode, drag
+     - Crear hook custom useNodeTree para encapsular lógica de árbol
+     - Extraer lógica de búsqueda recursiva a utilidades
+
+     Fase 8: Mejorar ConnectionLine (MEDIO)
+
+     Archivo: ConnectionLine.jsx
+     - Memoizar cálculos con useMemo
+     - Simplificar cálculo de intersección de bordes
+     - Añadir transiciones suaves durante drag (opcional)
+     - Optimizar z-index dinámico basado en profundidad del nodo
+
+     Fase 9: Validación y Manejo de Errores (MEDIO)
+
+     Archivos: Todos
+     - Añadir PropTypes o TypeScript types
+     - Implementar boundary de errores con ErrorBoundary
+     - Validar rangos en handlePropertyChange (width, height, fontSize, etc.)
+     - Añadir try-catch en fromJSON y operaciones críticas
+
+     Fase 10: Mejorar Toolbar y Propiedades (BAJO)
+
+     Archivos: Editor.jsx, Toolbar.jsx
+     - Añadir tooltips descriptivos
+     - Implementar feedback visual al añadir/eliminar nodos
+     - Añadir animaciones sutiles en cambios de propiedades
+     - Mejorar diseño del panel de propiedades con secciones
+
+     Estructura Final Esperada:
+
+     client/src/
+     ├── pages/Editor.jsx (refactorizado con useReducer)
+     ├── components/editor/
+     │   ├── Node.jsx (memoizado)
+     │   ├── ConnectionLine.jsx (optimizado)
+     │   └── Toolbar.jsx (mejorado)
+     ├── hooks/
+     │   └── useNodeTree.js (nuevo - lógica de árbol)
+     ├── models/
+     │   └── MindMapNode.js (mejorado, sin circular refs)
+     ├── utils/
+     │   └── nodeUtils.js (nuevo - helpers de traversal)
+     └── reducers/
+         └── editorReducer.js (nuevo - reducer del editor)
+
+     Orden de Implementación:
+
+     1. Fase 3 (Modelo) → Base sólida
+     2. Fase 1 (Estado) → Arquitectura correcta  
+     3. Fase 2 (Bug duplicación) → Fix crítico
+     4. Fase 4 (Edición) → UX mejorada
+     5. Fase 5 (Drag) → Funcionalidad core
+     6. Fase 7 (Duplicación) → Código limpio
+     7. Fase 6 (Optimización) → Performance
+     8. Fase 8-10 (Mejoras) → Polish
+
+     Resultado: Editor completamente refactorizado con mejores prácticas de React, sin bugs 
+     críticos, código mantenible y optimizado.

@@ -1,0 +1,16 @@
+{
+  "name": "mindinvis-shared",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./constants/*": "./constants/*.js",
+    "./types/*": "./types/*.js",
+    "./utils/*": "./utils/*.js"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0"
+  }
+}

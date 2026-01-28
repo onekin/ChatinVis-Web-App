@@ -1,0 +1,77 @@
+.app {
+  display: flex;
+  min-height: 100vh;
+  background: var(--background);
+  position: relative;
+}
+
+.app::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  right: -20%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(77, 208, 225, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float 20s ease-in-out infinite;
+}
+
+.app::after {
+  content: '';
+  position: fixed;
+  bottom: -40%;
+  left: -15%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(106, 76, 147, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float 25s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.content-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(77, 208, 225, 0.3) transparent;
+}
+
+.content-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(77, 208, 225, 0.3);
+  border-radius: 3px;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(77, 208, 225, 0.5);
+}
