@@ -1,225 +1,257 @@
 # MindInVis
 
-A web application for mind mapping with LLM integration, based on ChatInVis.
+Una aplicación web para mapas mentales con integración de LLMs, basada en ChatInVis.
 
-## Project Structure
+## Estructura del Proyecto
 
 ```
 MindInVis/
 ├── client/         # Frontend (React + Vite)
 ├── server/         # Backend (Node.js + Express)
-├── shared/         # Shared code
-├── database/       # Migrations and seeds
-└── docs/           # Documentation
+├── shared/         # Código compartido entre cliente y servidor
+├── docs/           # Documentación del proyecto
+└── seed.js         # Script de inicialización de datos
 ```
 
-## Tech Stack
+## Stack Tecnológico
 
 ### Frontend
-- React 18
-- Vite
-- Zustand/Redux (state management)
-- D3.js/Vis.js (mind map visualization)
-- TailwindCSS/Styled Components
+- **React 18** - Framework de UI
+- **Vite** - Build tool y dev server
+- **Zustand** - Gestión de estado
+- **ReactFlow** - Visualización de mapas mentales
+- **D3.js** - Visualización de datos avanzada
+- **TanStack Query** - Gestión de datos asíncronos
+- **Axios** - Cliente HTTP
+- **React Router** - Navegación
+- **Framer Motion** - Animaciones
 
 ### Backend
-- Node.js + Express
-- LangChain (LLM integration)
-- PostgreSQL/MongoDB (database)
-- JWT (authentication)
+- **Node.js + Express** - Servidor y API REST
+- **LangChain** - Integración con LLMs
+- **Mongoose** - ODM para MongoDB
+- **JWT** - Autenticación
+- **Winston** - Logging
+- **Helmet** - Seguridad HTTP
+- **Morgan** - HTTP request logger
 
 ### LLM APIs
-- OpenAI (GPT-4, GPT-3.5)
-- Anthropic (Claude)
+- **OpenAI** - GPT-4, GPT-3.5-turbo
+- **Anthropic** - Claude 2.0
+- **Google Generative AI** - Gemini
 
-## Development
+## Instalación
 
-### Installation
+### Requisitos Previos
+- **Node.js** >= 18.0.0
+- **npm** >= 9.0.0
+- **MongoDB** (instalación local o instancia remota)
 
+### Configuración Inicial
+
+1. **Clonar el repositorio:**
 ```bash
-# Install dependencies for the entire project
+git clone <repository-url>
+cd ChatinVis-Web-App
+```
+
+2. **Instalar dependencias:**
+```bash
+# Instalar todas las dependencias (root + client + server + shared)
 npm install
 
-# Install only frontend
-cd client && npm install
-
-# Install only backend
-cd server && npm install
+# O instalar manualmente cada workspace:
+npm run install:all
 ```
 
-### Local Development
+3. **Configurar variables de entorno:**
+
+Crear archivo `.env` en la raíz del proyecto con:
+```env
+# API Keys de LLMs (REQUERIDAS)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=...
+
+# JWT Secret (Cambiar en producción)
+JWT_SECRET=tu-secreto-super-seguro-aqui
+
+# MongoDB URI
+MONGODB_URI=mongodb://localhost:27017/mindinvis
+
+# Configuración opcional
+NODE_ENV=development
+PORT=5000
+```
+
+También crear `.env` en `client/`:
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+4. **Inicializar la base de datos:**
+```bash
+# Ejecutar seed para datos iniciales
+node seed.js
+```
+
+## Desarrollo
+
+### Ejecutar en modo desarrollo
 
 ```bash
-# Start everything (frontend + backend)
+# Iniciar frontend y backend simultáneamente
 npm run dev
 
-# Only frontend
-npm run dev:client
-
-# Only backend
-npm run dev:server
+# O iniciar por separado:
+npm run dev:client    # Frontend en http://localhost:5173
+npm run dev:server    # Backend en http://localhost:5000
 ```
 
-### Production Build
+### Otros comandos útiles
 
 ```bash
-npm run build
+# Linting
+npm run lint              # Lint de todo el proyecto
+npm run lint:client       # Solo frontend
+npm run lint:server       # Solo backend
+
+# Testing
+npm run test              # Tests de todo el proyecto
+npm run test:client       # Solo frontend
+npm run test:server       # Solo backend
+
+# Build de producción
+npm run build             # Build de cliente y servidor
+npm run build:client      # Solo frontend
+npm run build:server      # Solo servidor
 ```
 
-## Docker
+## Estructura de Workspaces
 
-### 🚀 Inicio Rápido
+Este proyecto usa **npm workspaces** para gestionar múltiples paquetes:
 
-**1. Configurar variables de entorno:**
-```bash
-cp .env.example .env
-# Edita .env y agrega tus API keys
+- **Root**: Configuración compartida y scripts principales
+- **client**: Aplicación React frontend
+- **server**: API backend con Express
+- **shared**: Código compartido (constantes, tipos, utilidades)
+
+Las dependencias se instalan de forma centralizada desde la raíz del proyecto.
+
+## Arquitectura del Proyecto
+
+### Frontend (`client/`)
+```
+src/
+├── assets/          # Recursos estáticos (imágenes, fuentes)
+├── components/      # Componentes React
+│   ├── common/     # Componentes reutilizables
+│   ├── mindmap/    # Componentes del mapa mental
+│   ├── modals/     # Modales de configuración y ayuda
+│   └── sidebar/    # Barra lateral con controles
+├── hooks/          # Custom React hooks
+├── services/       # Comunicación con la API
+├── store/          # Estado global (Zustand)
+├── styles/         # Estilos globales
+└── utils/          # Utilidades del cliente
 ```
 
-**2. Iniciar en producción:**
-```bash
-docker-compose up -d
+### Backend (`server/`)
+```
+src/
+├── controllers/    # Controladores de rutas HTTP
+├── services/       # Lógica de negocio
+│   ├── llm/       # Servicios LLM
+│   │   ├── LLMManager.js     # Gestión de llamadas LLM
+│   │   ├── PromptBuilder.js  # Construcción de prompts
+│   │   └── LLMClient.js      # Cliente LLM
+│   ├── mindmap/   # Servicios de mapas mentales
+│   │   └── MindmapManager.js # Gestión de mapas
+│   ├── logging/   # Logging y auditoría
+│   │   └── LogManager.js
+│   └── storage/   # Gestión de configuración
+│       ├── ModelManager.js
+│       └── ParameterManager.js
+├── models/        # Modelos de datos (MongoDB/Mongoose)
+├── routes/        # Definición de endpoints API
+├── middleware/    # Middleware (auth, validación, errores)
+├── config/        # Configuración (DB, LLM)
+└── utils/         # Utilidades del servidor
 ```
 
-**3. Acceder a la aplicación:**
-- **App**: http://localhost:5000
-- **MongoDB Express** (opcional): `docker-compose --profile debug up -d`
-  - URL: http://localhost:8081
-  - Usuario: `admin` / Contraseña: `admin`
-
-### 📋 Comandos Principales
-
-```bash
-# Producción
-docker-compose up -d              # Iniciar en background
-docker-compose logs -f app        # Ver logs en tiempo real
-docker-compose ps                 # Ver estado de contenedores
-docker-compose down               # Detener todo
-docker-compose down -v            # Detener y eliminar volúmenes
-
-# Desarrollo (con hot-reload)
-docker-compose -f docker-compose.dev.yml up
-docker-compose -f docker-compose.dev.yml down
-
-# Reconstruir imagen
-docker-compose up --build -d
-
-# Acceder al contenedor
-docker-compose exec app sh
-docker-compose exec mongo mongosh -u admin -p admin123
+### Shared (`shared/`)
+```
+├── constants/     # Constantes compartidas
+│   ├── IconsMap.js              # Mapeo de iconos
+│   ├── PromptStyles.js          # Estilos de prompts
+│   └── ModelDefaultValues.js   # Valores por defecto
+├── types/         # Definiciones de tipos
+└── utils/         # Utilidades compartidas
 ```
 
-### 🔧 Configuración Avanzada
+## Migración desde ChatInVis
 
-**Variables de entorno disponibles:**
-```env
-# API Keys (REQUERIDAS)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=...
+Este proyecto es una migración de la extensión de navegador **ChatInVis** a una aplicación web standalone.
 
-# JWT (Cambiar en producción)
-JWT_SECRET=tu-secreto-super-seguro
+### Componentes Migrados
 
-# MongoDB (ya configurado en docker-compose)
-MONGODB_URI=mongodb://admin:admin123@mongo:27017/mindinvis?authSource=admin
-
-# Opcional
-NODE_ENV=production
-PORT=5000
-LOG_LEVEL=info
-CORS_ORIGIN=http://localhost:5000
+**Servicios del Backend** (desde ChatInVis Extension):
+```
+LLMManager.js         ← app/scripts/background/LLMManagerBackground.js
+MindmapManager.js     ← app/scripts/chatinviz/MindmapManager.js
+PromptBuilder.js      ← app/scripts/chatinviz/PromptBuilder.js
+LLMClient.js          ← app/scripts/llm/LLMClient.js
+LogManager.js         ← app/scripts/background/LogManager.js
+ModelManager.js       ← app/scripts/background/ModelManager.js
+ParameterManager.js   ← app/scripts/background/ParameterManager.js
 ```
 
-**Usar MongoDB externo:**
-```yaml
-# En docker-compose.yml, modifica:
-environment:
-  - MONGODB_URI=mongodb://tu-host:27017/mindinvis
-# Y comenta el servicio 'mongo' y 'depends_on'
+**Constantes Compartidas** (desde ChatInVis Extension):
+```
+IconsMap.js           ← app/scripts/chatinviz/IconsMap.js
+PromptStyles.js       ← app/scripts/chatinviz/PromptStyles.js
+ModelDefaultValues.js ← app/scripts/chatinviz/ModelDefaultValues.js
 ```
 
-### 🐛 Modo Desarrollo
-
-Incluye hot-reload para cambios en código:
-```bash
-docker-compose -f docker-compose.dev.yml up
+**Modelos de Datos** (desde ChatInVis Extension):
+```
+Problem.js            ← app/scripts/chatinviz/model/Problem.js
+Intervention.js       ← app/scripts/chatinviz/model/Intervention.js
+Consequence.js        ← app/scripts/chatinviz/model/Consequence.js
 ```
 
-**Características:**
-- ✅ Hot reload automático (Vite + Nodemon)
-- ✅ MongoDB Express en http://localhost:8081
-- ✅ Código fuente montado como volumen
-- ✅ Frontend en http://localhost:5173
-- ✅ Backend en http://localhost:5000
-
-### 📦 Solo Docker (sin compose)
-
-```bash
-# Build
-docker build -t mindinvis:latest .
-
-# Run (requiere MongoDB externo)
-docker run -p 5000:5000 \
-  -e MONGODB_URI=mongodb://host:27017/mindinvis \
-  -e OPENAI_API_KEY=sk-... \
-  -e ANTHROPIC_API_KEY=... \
-  mindinvis:latest
+**Utilidades** (desde ChatInVis Extension):
+```
+FileUtils.js          ← app/scripts/utils/FileUtils.js
+LLMTextUtils.js       ← app/scripts/utils/LLMTextUtils.js
 ```
 
-### 🔍 Troubleshooting
+## Características Principales
 
-**El contenedor no inicia:**
-```bash
-docker-compose logs app
-```
+- Visualización interactiva de mapas mentales con ReactFlow
+- Integración con múltiples LLMs (OpenAI, Anthropic, Google)
+- Gestión de sesiones de usuario con autenticación JWT
+- Almacenamiento persistente en MongoDB
+- Sistema de logging y auditoría
+- Interfaz responsiva y moderna
 
-**Limpiar todo y empezar de cero:**
-```bash
-docker-compose down -v
-docker system prune -a
-docker-compose up --build
-```
+## Documentación Adicional
 
-**Ver logs de MongoDB:**
-```bash
-docker-compose logs mongo
-```
+- `STRUCTURE.txt` - Estructura detallada del proyecto
+- `docs/` - Documentación adicional de arquitectura y migración
 
-**Conectar a MongoDB desde fuera:**
-```bash
-mongosh mongodb://admin:admin123@localhost:27017/mindinvis?authSource=admin
-```
+## Contribuir
 
-## Architecture
+1. Fork el proyecto
+2. Crea tu feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push al branch (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-### Frontend
-- **Components**: Reusable React components
-- **Services**: Backend API communication
-- **Store**: Global application state
-- **Hooks**: Custom React hooks
-
-### Backend
-- **Controllers**: Route controller logic
-- **Services**: Business logic (LLM, Mindmap, etc.)
-- **Models**: Data models
-- **Routes**: API endpoint definitions
-- **Middleware**: Authentication, validation, error handling
-
-### Shared
-- **Constants**: Shared constants (icons, prompt styles)
-- **Types**: TypeScript type definitions
-- **Utils**: Shared utilities
-
-## Migration from ChatInVis
-
-The following components have been migrated:
-
-- `MindmapManager.js` → `server/src/services/mindmap/MindmapManager.js`
-- `LLMManagerBackground.js` → `server/src/services/llm/LLMManager.js`
-- `PromptBuilder.js` → `server/src/services/llm/PromptBuilder.js`
-- Models (Problem, Intervention, Consequence) → `server/src/models/`
-- Utils → `server/src/utils/` and `shared/utils/`
-
-## License
+## Licencia
 
 MIT
+
+## Contacto
+
+Para preguntas o soporte, abre un issue en este repositorio.

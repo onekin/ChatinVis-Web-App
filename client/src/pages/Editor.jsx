@@ -341,6 +341,17 @@ const Editor = () => {
 
     return () => clearTimeout(timer);
   }, []); // Only run once on mount
+  // Sync map name with root node text
+  useEffect(() => {
+    if (state.tree && state.tree.text) {
+      // Only update if the root node has a meaningful text and the map name hasn't been manually changed
+      const rootNodeText = state.tree.text;
+      if (rootNodeText !== 'Central Topic' && rootNodeText !== mapName) {
+        setMapName(rootNodeText);
+      }
+    }
+  }, [state.tree.text]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       // F9 to toggle sidebar
@@ -854,6 +865,11 @@ const Editor = () => {
 
     // Update node text
     dispatch(actionCreators.updateNodeText(editingNodeId, editingText));
+
+    // If editing the root node, update the map name as well
+    if (editingNodeId === state.tree.id) {
+      setMapName(editingText);
+    }
 
     // Generate child nodes ONLY if not generated before
     if (!editingNode.hasGeneratedChildren) {
