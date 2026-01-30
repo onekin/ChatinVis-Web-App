@@ -183,7 +183,6 @@
   }
 
   .node-feedback-btn:hover {
-    background: linear-gradient(135deg, #a78bfa 0%, #818cf8 100%);
   }
 
   .mindmap-node:hover .node-action-buttons {
@@ -426,27 +425,7 @@
 }
 
 /* Optional visual indicators */
-.node-type-question::before {
-  content: '?';
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #60a5fa;
-  opacity: 0.5;
-}
-
-.node-type-answer::before {
-  content: '✓';
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #34d399;
-  opacity: 0.5;
-}
+/* Removed question mark and checkmark indicators */
 
 /* Hide indicators in edit mode */
 .node-edit-mode::before {
