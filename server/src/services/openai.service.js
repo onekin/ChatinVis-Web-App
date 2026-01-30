@@ -339,12 +339,12 @@ class OpenAIService {
           // Si hay chunks del PDF, agregar la referencia a la descripción
           if (pdfChunks && pdfChunks.length > 0) {
             const mostRelevantChunk = pdfChunks[0];
-            node.source = `PDF - Página ${mostRelevantChunk.pageNumber}`;
-            
+            node.source = `PDF - Page ${mostRelevantChunk.pageNumber}`;
+
             // Agregar la cita al final de la descripción
-            const citation = `\n\n📖 Fuente: Página ${mostRelevantChunk.pageNumber}\n"${mostRelevantChunk.text.substring(0, 150)}..."`;
+            const citation = `\n\nsource ${mostRelevantChunk.pageNumber}\n"${mostRelevantChunk.text.substring(0, 150)}..."`;
             node.description = node.description ? node.description + citation : citation;
-            
+
             console.log(`  Added citation from page ${mostRelevantChunk.pageNumber} to description`);
           }
 
