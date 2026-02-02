@@ -1,4 +1,4 @@
-# MindInVis
+# ChatinVis-Web-App
 
 > Web application for creating interactive mind maps powered by AI (LLMs)
 
@@ -7,7 +7,7 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?logo=mongodb)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## What is MindInVis?
+## What is ChatinVis?
 
 MindInVis is a full-stack web application for creating interactive mind maps with LLM integration. Users can ask questions and the system generates structured responses that are visualized as nodes in the mind map.
 
@@ -159,3 +159,4 @@ MIT
 <p align="center">
   <sub>Based on ChatInVis Browser Extension</sub>
 </p>
+
