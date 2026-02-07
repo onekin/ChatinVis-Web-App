@@ -94,13 +94,13 @@ ChatinVis-Web-App/
    # Server
    NODE_ENV=development
    PORT=3001
-   ```
+   
    # CORS
    CORS_ORIGIN=http://localhost:3000
 
    # Logging
    LOG_LEVEL=debug
-
+   ```
    Create `.env` in `client/`:
    ```env
    VITE_API_URL=http://localhost:5000
@@ -165,5 +165,6 @@ MIT
 <p align="center">
   <sub>Based on ChatInVis Browser Extension</sub>
 </p>
+
 
 
