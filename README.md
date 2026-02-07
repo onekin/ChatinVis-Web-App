@@ -9,7 +9,7 @@
 
 ## What is ChatinVis?
 
-MindInVis is a full-stack web application for creating interactive mind maps with LLM integration. Users can ask questions and the system generates structured responses that are visualized as nodes in the mind map.
+ChatInVis is a full-stack web application for creating interactive mind maps with LLM integration. Users can ask questions and the system generates structured responses that are visualized as nodes in the mind map.
 
 ### Key Features
 

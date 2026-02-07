@@ -1,7 +1,7 @@
-MindInVis - Estructura del Proyecto
+ChatInVis - Estructura del Proyecto
 =====================================
 
-MindInVis/
+ChatInVis/
 │
 ├── client/                          # Frontend React + Vite
 │   ├── public/                      # Archivos estáticos
