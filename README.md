@@ -86,21 +86,27 @@ ChatinVis-Web-App/
 
    # Security
    JWT_SECRET=your-secret-key-here
+   JWT_EXPIRE=7d
 
    # Database
    MONGODB_URI=mongodb://localhost:27017/mindinvis
 
    # Server
    NODE_ENV=development
-   PORT=5000
+   PORT=3001
    ```
+   # CORS
+   CORS_ORIGIN=http://localhost:3000
+
+   # Logging
+   LOG_LEVEL=debug
 
    Create `.env` in `client/`:
    ```env
    VITE_API_URL=http://localhost:5000
    ```
 
-4. **Initialize database**
+5. **Initialize database**
    ```bash
    node seed.js
    ```
@@ -159,4 +165,5 @@ MIT
 <p align="center">
   <sub>Based on ChatInVis Browser Extension</sub>
 </p>
+
 
