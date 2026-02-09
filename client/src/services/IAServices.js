@@ -12,7 +12,7 @@ class IAService {
   }
 
 
-  async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null) {
+  async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null, frameworkConfig = null) {
     try {
       // Map English types to Spanish for API compatibility
       const typeMap = {
@@ -27,7 +27,8 @@ class IAService {
         nodeTipo: mappedTipo,
         count,
         nodeContext,
-        documentId
+        documentId,
+        frameworkConfig
       });
 
       if (response.data.success && response.data.nodes) {

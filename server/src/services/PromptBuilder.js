@@ -24,6 +24,29 @@ class PromptBuilder {
     return ModelDefaultValues.Description.default;
   }
 
+  static getFrameworkGuidance(frameworkType) {
+    const frameworks = {
+      'cause-consequences': 'Focus on causal relationships: identify causes, effects, and consequences. For each item, explain what leads to it (causes) and what results from it (consequences).',
+      '5w1h': 'Use the 5W1H framework: Who (actors/stakeholders), What (actions/events), When (timing/sequence), Where (location/context), Why (reasons/motivations), How (methods/processes).',
+      'swot': 'Apply SWOT analysis: categorize items as Strengths (advantages), Weaknesses (limitations), Opportunities (potential benefits), or Threats (risks/challenges).'
+    };
+    return frameworks[frameworkType] || '';
+  }
+
+  static buildFrameworkPrompt(frameworkConfig) {
+    if (!frameworkConfig || !frameworkConfig.enabled) {
+      return '';
+    }
+
+    let frameworkText = '';
+    if (frameworkConfig.type === 'predefined') {
+      frameworkText = `\n\nIMPORTANT: Analyze and structure your response using the ${frameworkConfig.value.toUpperCase().replace(/-/g, ' ')} framework. ${this.getFrameworkGuidance(frameworkConfig.value)}`;
+    } else {
+      frameworkText = `\n\nIMPORTANT: Analyze and structure your response using the following framework: ${frameworkConfig.value}`;
+    }
+    return frameworkText;
+  }
+
   static getPromptForLLMAnswers(that, question) {
     let numberOfItems = this.getNumberOfLLMItems(that);
     let description = this.getDescription(that);
@@ -152,11 +175,11 @@ class PromptBuilder {
     return prompt;
   }
 
-  static getPromptForModelSuggestedQuestion(that, answerNodeLabel, answerNodeNote, previousQuestionNodeLabel, firstQuestion, model) {
+  static getPromptForModelSuggestedQuestion(that, answerNodeLabel, answerNodeNote, previousQuestionNodeLabel, firstQuestion, model, frameworkConfig = null) {
     let numberOfItems = model.numberOfQuestions;
     let description = this.getDescription(that);
-    let prompt = 'Exploring this first question: ' + firstQuestion + ', I have later ask: ' + previousQuestionNodeLabel + '. The answer for this question was ' + answerNodeLabel + ' which means ' + answerNodeNote + '.\n';
-    prompt += ' You have to suggest me more ' + numberOfItems + ' following up QUESTIONS based on the ' + model.name + ' model in JSON format including each item in an array. The ' + model.name + ' is based on ' + model.description + '. Please suggest the questions in the following format:\n';
+    let prompt = 'I have asked: ' + previousQuestionNodeLabel + '. The answer for this question was ' + answerNodeLabel + ' which means ' + answerNodeNote + '.\n';
+    prompt += ' You have to suggest me more ' + numberOfItems + ' following up QUESTIONS based on the ' + model.name + ' model in JSON format including each item in an array. The ' + model.name + ' is based on ' + model.description + '.' + this.buildFrameworkPrompt(frameworkConfig) + ' Please suggest the questions in the following format:\n';
     prompt += '{\n' + '"items": [';
     for (let i = 0; i < numberOfItems; i++) {
       if (i === 0) {
@@ -173,7 +196,7 @@ class PromptBuilder {
 
   static getPromptForLogsSuggestedQuestions(that, answerNodeLabel, answerNodeNote, previousQuestionNodeLabel, firstQuestion, logs) {
     let numberOfItems = this.getNumberOfLogItems(that);
-    let prompt = 'Exploring this first question: ' + firstQuestion + ', I have later ask: ' + previousQuestionNodeLabel + '. The answer for this question was ' + answerNodeLabel + ' which means ' + answerNodeNote + '.\n';
+    let prompt = 'I have asked: ' + previousQuestionNodeLabel + '. The answer for this question was ' + answerNodeLabel + ' which means ' + answerNodeNote + '.\n';
     prompt += ' You have to suggest me more ' + numberOfItems + ' following up QUESTIONS in JSON format including each item in an array. You have to provide me the questions from the following log of previous questions, to do that, from the "answer" field of the log, find the more similars to "' + answerNodeLabel + '" and then include the "question" field in your answer. The format should be as follows:';
     prompt += '{\n' + '"items": [';
     for (let i = 0; i < numberOfItems; i++) {
@@ -191,11 +214,11 @@ class PromptBuilder {
     return prompt;
   }
 
-  static getPromptForLLMSuggestedQuestions(that, answerNodeLabel, answerNodeNote, previousQuestionNodeLabel, firstQuestion) {
+  static getPromptForLLMSuggestedQuestions(that, answerNodeLabel, answerNodeNote, previousQuestionNodeLabel, firstQuestion, frameworkConfig = null) {
     let numberOfItems = this.getNumberOfLLMItems(that);
     let description = this.getDescription(that);
-    let prompt = 'Exploring this first question: ' + firstQuestion + ', I have later ask: ' + previousQuestionNodeLabel + '. The answer for this question was ' + answerNodeLabel + ' which means ' + answerNodeNote + '.\n';
-    prompt += ' You have to suggest me more ' + numberOfItems + ' following up QUESTIONS in JSON format including each item in an array. The format should be as follows:';
+    let prompt = 'I have asked: ' + previousQuestionNodeLabel + '. The answer for this question was ' + answerNodeLabel + ' which means ' + answerNodeNote + '.\n';
+    prompt += ' You have to suggest me more ' + numberOfItems + ' following up QUESTIONS in JSON format including each item in an array.' + this.buildFrameworkPrompt(frameworkConfig) + ' The format should be as follows:';
     prompt += '{\n' + '"items": [';
     for (let i = 0; i < numberOfItems; i++) {
       if (i === 0) {

@@ -47,7 +47,9 @@ const treeToFlow = (
   selectedNodeId,
   mindMapId,
   onPDFUploaded,
-  onGenerateDirectly
+  onGenerateDirectly,
+  detailsPopupNodeId,
+  onToggleDetailsPopup
 ) => {
   const nodes = [];
   const edges = [];
@@ -76,6 +78,8 @@ const treeToFlow = (
         mindMapId,
         onGenerateDirectly,
         onPDFUploaded,
+        showDetailsPopup: detailsPopupNodeId === node.id,
+        onToggleDetailsPopup,
       },
     });
 
@@ -139,6 +143,8 @@ const Editor = () => {
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [documentId, setDocumentId] = useState(null);
+  const [detailsPopupNodeId, setDetailsPopupNodeId] = useState(null);
+  const [frameworkConfig, setFrameworkConfig] = useState(null);
 
   // State to show/hide sidebar
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -149,6 +155,18 @@ const Editor = () => {
     console.log('PDF uploaded, updating documentId:', documentId);
     setDocumentId(documentId);
     toast.success('PDF linked to this mind map. RAG is now active!', { duration: 3000 });
+  }, []);
+
+  const loadFrameworkConfig = useCallback(() => {
+    const enabled = localStorage.getItem('mindinvis_framework_enabled') === 'true';
+    const type = localStorage.getItem('mindinvis_framework_type') || 'predefined';
+    const value = localStorage.getItem('mindinvis_framework_value') || 'cause-consequences';
+
+    if (enabled) {
+      setFrameworkConfig({ enabled, type, value });
+    } else {
+      setFrameworkConfig(null);
+    }
   }, []);
 
   const handleRemoveDocument = useCallback(async () => {
@@ -193,6 +211,11 @@ const Editor = () => {
         if (mapData.documentId) {
           setDocumentId(mapData.documentId);
           console.log(' PDF documentId loaded:', mapData.documentId);
+        }
+
+        if (mapData.frameworkConfig) {
+          setFrameworkConfig(mapData.frameworkConfig);
+          console.log(' Framework config loaded:', mapData.frameworkConfig);
         }
 
         // Check if we have a saved tree structure
@@ -308,6 +331,26 @@ const Editor = () => {
     loadMap();
   }, [mapId, dispatch]);
 
+  // Load framework configuration
+  useEffect(() => {
+    loadFrameworkConfig();
+
+    // Listen for settings updates
+    const handleSettingsUpdate = (event) => {
+      if (event.detail?.frameworkConfig) {
+        setFrameworkConfig(event.detail.frameworkConfig);
+      } else {
+        loadFrameworkConfig();
+      }
+    };
+
+    window.addEventListener('mindinvis-settings-updated', handleSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('mindinvis-settings-updated', handleSettingsUpdate);
+    };
+  }, [loadFrameworkConfig]);
+
   // Auto-create map when starting fresh (no mapId)
   useEffect(() => {
     const createInitialMap = async () => {
@@ -408,6 +451,7 @@ const Editor = () => {
     if (e.button !== 0) return;
     e.stopPropagation();
     setSelectedNodeId(node.id);
+    setDetailsPopupNodeId(null); // Close details popup when clicking on another node
   }, []);
 
   // Double click handler: enter edit mode
@@ -433,15 +477,6 @@ const Editor = () => {
     try {
       for (const [property, value] of Object.entries(styles)) {
         // Determine action type based on property
-        let action = 'changeNodeStyle';
-        const oldValue = node[property];
-
-        if (property === 'backgroundColor' || property === 'borderColor') {
-          action = 'changeNodeColor';
-          await nodeLogService.logChangeNodeColor(node.id, mapId, oldValue, value);
-        } else {
-          await nodeLogService.logChangeNodeStyle(node.id, mapId, property, oldValue, value);
-        }
       }
     } catch (logError) {
       console.error('Failed to create style change log:', logError);
@@ -482,68 +517,42 @@ const Editor = () => {
   const handleCanvasClick = useCallback(() => {
     setEditingNodeId(null);
     setSelectedNodeId(null);
+    setDetailsPopupNodeId(null); // Close details popup when clicking on canvas
   }, []);
 
   // Add a child node
   const handleAddNode = useCallback(async () => {
     if (!selectedNode) return;
 
-    const verticalSpacing = 120;
-    const horizontalOffset = 300;
-    const childrenCount = selectedNode.children?.length || 0;
-
-    // Calculate vertical position based on number of existing children
-    const offsetY = childrenCount * verticalSpacing;
-
     // Get pathLength to determine correct child type
     const nodePath = getNodePath(state.tree, selectedNodeId);
     const pathLength = nodePath?.length || 0;
 
+    // Create new child node - dynamic layout will position it automatically
     const newChild = new MindMapNode(
       `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       'New Node',
-      selectedNode.x + horizontalOffset, // To the right
-      selectedNode.y + offsetY, // Below last child
+      selectedNode.x + 300, // Temporary X position (layout will adjust)
+      selectedNode.y,       // Temporary Y position (layout will adjust)
       getChildType(selectedNode.type, pathLength)
     );
-
-    try {
-      // Registrar log de creación de nodo
-      await nodeLogService.logCreateNode(newChild.id, mapId, newChild.text);
-    } catch (logError) {
-      console.error('Failed to create node log:', logError);
-    }
 
     dispatch(actionCreators.addChild(selectedNodeId, newChild));
   }, [selectedNode, selectedNodeId, mapId, state.tree]);
 
   const handleAddChildToNode = useCallback(async (parentNode) => {
-    const horizontalOffset = 300;
-    const horizontalSpacing = 50; // Additional spacing between children
-    const childrenCount = parentNode.children?.length || 0;
-
-    // Children are positioned at same Y level as parent
-    // But separated horizontally to avoid overlap
-    const offsetX = childrenCount * horizontalSpacing;
-
     // Get pathLength to determine correct child type
     const nodePath = getNodePath(state.tree, parentNode.id);
     const pathLength = nodePath?.length || 0;
 
+    // Create new child node - dynamic layout will position it automatically
     const newChild = new MindMapNode(
       `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       'New Node',
-      parentNode.x + horizontalOffset + offsetX,
-      parentNode.y, // Same Y level as parent
+      parentNode.x + 300, // Temporary X position (layout will adjust)
+      parentNode.y,       // Temporary Y position (layout will adjust)
       getChildType(parentNode.type, pathLength)
     );
-
-    try {
-      // Registrar log de creación de nodo
-      await nodeLogService.logCreateNode(newChild.id, mapId, newChild.text);
-    } catch (logError) {
-      console.error('Failed to create node log:', logError);
-    }
 
     dispatch(actionCreators.addChild(parentNode.id, newChild));
   }, [state.tree, mapId]);
@@ -584,12 +593,6 @@ const Editor = () => {
       node.type                  // SAME type (no alternation)
     );
 
-    try {
-      // Log sibling node creation
-      await nodeLogService.logCreateNode(newSibling.id, mapId, newSibling.text);
-    } catch (logError) {
-      console.error('Failed to create sibling log:', logError);
-    }
 
     // Insert sibling at specific position (before current node)
     dispatch(actionCreators.addSiblingAtIndex(parentNode.id, newSibling, siblingIndex));
@@ -600,13 +603,6 @@ const Editor = () => {
     if (!selectedNode || selectedNode.id === 'root') {
       alert('Cannot delete the root node');
       return;
-    }
-
-    try {
-      // Registrar log antes de eliminar
-      await nodeLogService.logDeleteNode(selectedNodeId, mapId, selectedNode.text);
-    } catch (logError) {
-      console.error('Failed to create delete log:', logError);
     }
 
     dispatch(actionCreators.deleteNode(selectedNodeId));
@@ -637,7 +633,7 @@ const Editor = () => {
 
     try {
       setIsLoading(true);
-      toast.loading(`🤖 Analyzing ${parentNode.children.length} nodes...`, { id: 'summarize' });
+      toast.loading(`🤖 Analyzing ${parentNode.children.length} nodes...`, { id: 'summarize', duration: Infinity });
 
       // Prepare nodes for API
       const nodesToAggregate = parentNode.children.map(child => ({
@@ -646,7 +642,7 @@ const Editor = () => {
         title: child.text
       }));
 
-      toast.loading(`🔄 Compacting into ${targetCount} clusters...`, { id: 'summarize' });
+      toast.loading(`🔄 Compacting into ${targetCount} clusters...`, { id: 'summarize', duration: Infinity });
 
       // Call aggregation API
       const clusters = await iaService.aggregateNodes(
@@ -657,7 +653,7 @@ const Editor = () => {
 
       console.log('Clusters received:', clusters);
 
-      toast.loading(`✨ Creating ${clusters.length} new nodes...`, { id: 'summarize' });
+      toast.loading(`✨ Creating ${clusters.length} new nodes...`, { id: 'summarize', duration: Infinity });
 
       // Calculate positions for new nodes
       const positions = calculateChildrenPositions(parentNode, clusters.length, state.tree);
@@ -758,9 +754,9 @@ const Editor = () => {
 
     try {
       const nodePath = getNodePath(state.tree, parentNode.id);
-      
+
       console.log(' Generating nodes for:', parentNode.text);
-      toast.loading('🤖 Generating nodes with AI...', { id: 'generate' });
+      toast.loading('🤖 Generating nodes with AI...', { id: 'generate', duration: Infinity });
 
       const nodeCount = parseInt(localStorage.getItem('mindinvis_node_count') || '3');
       const nodeContext = nodePath && parentNode && nodePath.length > 1
@@ -779,7 +775,8 @@ const Editor = () => {
         parentNode.type,
         nodeCount,
         nodeContext,
-        documentId
+        documentId,
+        frameworkConfig
       );
 
       const positions = calculateChildrenPositions(parentNode, responses.length, state.tree);
@@ -803,6 +800,13 @@ const Editor = () => {
           source,
           citation
         );
+
+        // If PDF is uploaded, make nodes purple
+        if (documentId) {
+          childNode.backgroundColor = '#6b21a8';
+          childNode.borderColor = '#a855f7';
+        }
+
         return childNode;
       });
 
@@ -854,14 +858,6 @@ const Editor = () => {
       return;
     }
 
-    // Log node edit if text changed
-    if (editingNode.text !== editingText) {
-      try {
-        await nodeLogService.logEditNode(editingNodeId, mapId, editingNode.text, editingText);
-      } catch (logError) {
-        console.error('Failed to create edit log:', logError);
-      }
-    }
 
     // Update node text
     dispatch(actionCreators.updateNodeText(editingNodeId, editingText));
@@ -876,9 +872,9 @@ const Editor = () => {
       setIsLoading(true);
 
       if (documentId) {
-        toast.loading('🔍 Searching PDF for relevant context...', { id: 'generate' });
+        toast.loading('🔍 Searching PDF for relevant context...', { id: 'generate', duration: Infinity });
       } else {
-        toast.loading('🤖 Generating nodes with AI...', { id: 'generate' });
+        toast.loading('🤖 Generating nodes with AI...', { id: 'generate', duration: Infinity });
       }
 
       try {
@@ -937,7 +933,8 @@ const Editor = () => {
           currentNode.type,  // PARENT TYPE (question or answer)
           nodeCount, // Number of nodes to generate from config
           nodeContext,
-          documentId  // Pass documentId for RAG
+          documentId,  // Pass documentId for RAG
+          frameworkConfig  // Pass framework config
         );
 
         const positions = calculateChildrenPositions(currentNode, responses.length, state.tree);
@@ -964,6 +961,13 @@ const Editor = () => {
             source,
             citation
           );
+
+          // If PDF is uploaded, make nodes purple
+          if (documentId) {
+            childNode.backgroundColor = '#6b21a8';
+            childNode.borderColor = '#a855f7';
+          }
+
           return childNode;
         });
 
@@ -1010,6 +1014,10 @@ const Editor = () => {
     setEditingText('');
   }, [editingNodeId, editingText, state.tree, iaService, dispatch, documentId]);
 
+  const handleToggleDetailsPopup = useCallback((nodeId) => {
+    setDetailsPopupNodeId(prev => prev === nodeId ? null : nodeId);
+  }, []);
+
   useEffect(() => {
     const { nodes, edges } = treeToFlow(
         state.tree,
@@ -1029,11 +1037,13 @@ const Editor = () => {
         selectedNodeId,
         mapId,
         handlePDFUploaded,
-        handleGenerateDirectly
+        handleGenerateDirectly,
+        detailsPopupNodeId,
+        handleToggleDetailsPopup
     );
     setNodes(nodes);
     setEdges(edges);
-  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly]);
+  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup]);
 
   const handleNodeDragStop = useCallback((event, draggedNode) => {
     const targetNode = nodes.find(
@@ -1052,17 +1062,6 @@ const Editor = () => {
             const areInSameColumn = Math.abs(draggedNode.position.x - targetNode.position.x) < xTolerance;
 
             if (areInSameColumn) {
-              // Log node swap
-              try {
-                nodeLogService.logMoveNode(
-                  draggedNode.id,
-                  mapId,
-                  { x: draggedNode.position.x, y: draggedNode.position.y },
-                  { x: targetNode.position.x, y: targetNode.position.y }
-                );
-              } catch (logError) {
-                console.error('Failed to create swap log:', logError);
-              }
 
               dispatch(actionCreators.swapNodes(draggedNode.id, targetNode.id));
               return;
@@ -1101,7 +1100,8 @@ const Editor = () => {
         const newMap = await mapService.createMap({
           title: mapName,
           treeStructure: state.tree,
-          documentId: documentId
+          documentId: documentId,
+          frameworkConfig: frameworkConfig
         });
 
         console.log('New map created with ID:', newMap._id);
@@ -1115,7 +1115,8 @@ const Editor = () => {
       await mapService.saveMindMapState(mapId, {
         tree: state.tree,
         title: mapName,
-        documentId: documentId
+        documentId: documentId,
+        frameworkConfig: frameworkConfig
       });
 
       toast.success('Map saved successfully!', { id: 'save-map' });
@@ -1225,7 +1226,7 @@ const Editor = () => {
 
       {/* Toast Notifications */}
       <Toaster
-        position="top-right"
+        position="bottom-right"
         reverseOrder={false}
         gutter={8}
         toastOptions={{

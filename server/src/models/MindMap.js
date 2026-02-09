@@ -63,6 +63,21 @@ const mindMapSchema = new mongoose.Schema(
       ref: 'Document',
       default: null
     },
+    frameworkConfig: {
+      type: {
+        type: String,
+        enum: ['predefined', 'custom'],
+        default: null
+      },
+      value: {
+        type: String,
+        default: null
+      },
+      enabled: {
+        type: Boolean,
+        default: false
+      }
+    },
     collaborators: [
       {
         user: {

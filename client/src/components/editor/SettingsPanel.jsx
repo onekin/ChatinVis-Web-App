@@ -11,6 +11,12 @@ const SettingsPanel = ({ isOpen, onClose }) => {
   const [answerBgColor, setAnswerBgColor] = useState('#065f46');
   const [answerBorderColor, setAnswerBorderColor] = useState('#10b981');
 
+  // Framework configuration
+  const [frameworkEnabled, setFrameworkEnabled] = useState(false);
+  const [frameworkType, setFrameworkType] = useState('predefined');
+  const [frameworkValue, setFrameworkValue] = useState('cause-consequences');
+  const [customFramework, setCustomFramework] = useState('');
+
   // Load saved configuration
   useEffect(() => {
     const savedNodeCount = localStorage.getItem('mindinvis_node_count') || '3';
@@ -19,22 +25,51 @@ const SettingsPanel = ({ isOpen, onClose }) => {
     const savedAnswerBg = localStorage.getItem('mindinvis_answer_bg') || '#065f46';
     const savedAnswerBorder = localStorage.getItem('mindinvis_answer_border') || '#10b981';
 
+    const savedFrameworkEnabled = localStorage.getItem('mindinvis_framework_enabled') === 'true';
+    const savedFrameworkType = localStorage.getItem('mindinvis_framework_type') || 'predefined';
+    const savedFrameworkValue = localStorage.getItem('mindinvis_framework_value') || 'cause-consequences';
+    const savedCustomFramework = localStorage.getItem('mindinvis_custom_framework') || '';
+
     setNodeCount(parseInt(savedNodeCount));
     setQuestionBgColor(savedQuestionBg);
     setQuestionBorderColor(savedQuestionBorder);
     setAnswerBgColor(savedAnswerBg);
     setAnswerBorderColor(savedAnswerBorder);
+
+    setFrameworkEnabled(savedFrameworkEnabled);
+    setFrameworkType(savedFrameworkType);
+    setFrameworkValue(savedFrameworkValue);
+    setCustomFramework(savedCustomFramework);
   }, [isOpen]);
 
   const handleSave = () => {
+    // Validate custom framework if enabled
+    if (frameworkEnabled && frameworkType === 'custom' && !customFramework.trim()) {
+      alert('Please enter custom framework text or switch to predefined frameworks');
+      return;
+    }
+
     localStorage.setItem('mindinvis_node_count', nodeCount.toString());
     localStorage.setItem('mindinvis_question_bg', questionBgColor);
     localStorage.setItem('mindinvis_question_border', questionBorderColor);
     localStorage.setItem('mindinvis_answer_bg', answerBgColor);
     localStorage.setItem('mindinvis_answer_border', answerBorderColor);
 
-    // Dispatch custom event so other components know it changed
-    window.dispatchEvent(new Event('mindinvis-settings-updated'));
+    localStorage.setItem('mindinvis_framework_enabled', frameworkEnabled.toString());
+    localStorage.setItem('mindinvis_framework_type', frameworkType);
+    localStorage.setItem('mindinvis_framework_value', frameworkType === 'predefined' ? frameworkValue : customFramework);
+    localStorage.setItem('mindinvis_custom_framework', customFramework);
+
+    // Dispatch custom event with framework config
+    window.dispatchEvent(new CustomEvent('mindinvis-settings-updated', {
+      detail: {
+        frameworkConfig: {
+          enabled: frameworkEnabled,
+          type: frameworkType,
+          value: frameworkType === 'predefined' ? frameworkValue : customFramework
+        }
+      }
+    }));
 
     onClose();
   };
@@ -46,11 +81,20 @@ const SettingsPanel = ({ isOpen, onClose }) => {
     setAnswerBgColor('#065f46');
     setAnswerBorderColor('#10b981');
 
+    setFrameworkEnabled(false);
+    setFrameworkType('predefined');
+    setFrameworkValue('cause-consequences');
+    setCustomFramework('');
+
     localStorage.removeItem('mindinvis_node_count');
     localStorage.removeItem('mindinvis_question_bg');
     localStorage.removeItem('mindinvis_question_border');
     localStorage.removeItem('mindinvis_answer_bg');
     localStorage.removeItem('mindinvis_answer_border');
+    localStorage.removeItem('mindinvis_framework_enabled');
+    localStorage.removeItem('mindinvis_framework_type');
+    localStorage.removeItem('mindinvis_framework_value');
+    localStorage.removeItem('mindinvis_custom_framework');
   };
 
   if (!isOpen) return null;
@@ -181,6 +225,106 @@ const SettingsPanel = ({ isOpen, onClose }) => {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="settings-divider"></div>
+
+          <div className="settings-group">
+            <label className="settings-label">
+              Framework Configuration
+            </label>
+            <p className="settings-help-text">
+              Apply a thinking framework to guide AI responses throughout the mind map
+            </p>
+
+            <div style={{ marginTop: '12px' }}>
+              <label className="settings-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={frameworkEnabled}
+                  onChange={(e) => setFrameworkEnabled(e.target.checked)}
+                />
+                <span>Enable Framework</span>
+              </label>
+            </div>
+
+            {frameworkEnabled && (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="settings-radio-label">
+                    <input
+                      type="radio"
+                      name="frameworkType"
+                      value="predefined"
+                      checked={frameworkType === 'predefined'}
+                      onChange={(e) => setFrameworkType(e.target.value)}
+                    />
+                    <span>Predefined Frameworks</span>
+                  </label>
+                </div>
+
+                {frameworkType === 'predefined' && (
+                  <select
+                    value={frameworkValue}
+                    onChange={(e) => setFrameworkValue(e.target.value)}
+                    className="settings-select"
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      marginBottom: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc'
+                    }}
+                  >
+                    <option value="cause-consequences">Cause & Consequences</option>
+                    <option value="5w1h">5W1H (Who, What, When, Where, Why, How)</option>
+                    <option value="swot">SWOT Analysis (Strengths, Weaknesses, Opportunities, Threats)</option>
+                  </select>
+                )}
+
+                <div style={{ marginBottom: '12px' }}>
+                  <label className="settings-radio-label">
+                    <input
+                      type="radio"
+                      name="frameworkType"
+                      value="custom"
+                      checked={frameworkType === 'custom'}
+                      onChange={(e) => setFrameworkType(e.target.value)}
+                    />
+                    <span>Custom Framework</span>
+                  </label>
+                </div>
+
+                {frameworkType === 'custom' && (
+                  <textarea
+                    value={customFramework}
+                    onChange={(e) => setCustomFramework(e.target.value)}
+                    placeholder="Enter your custom framework instructions. Example: 'Focus on ethical implications, technical feasibility, and economic impact for each answer.'"
+                    className="settings-textarea"
+                    maxLength={500}
+                    style={{
+                      width: '100%',
+                      minHeight: '80px',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      fontFamily: 'inherit',
+                      fontSize: '14px',
+                      resize: 'vertical'
+                    }}
+                  />
+                )}
+
+                <div className="settings-info-box" style={{ marginTop: '12px', fontSize: '12px' }}>
+                  <p><strong>Framework Preview:</strong></p>
+                  <p style={{ fontStyle: 'italic', color: '#666' }}>
+                    {frameworkType === 'predefined'
+                      ? `Using ${frameworkValue.toUpperCase().replace(/-/g, ' ')} framework`
+                      : customFramework || 'Enter custom framework text above'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="settings-info-box">

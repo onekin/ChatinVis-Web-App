@@ -1,15 +1,12 @@
 .node-tooltip {
-  position: absolute;
-  top: 100%;
-  left: 50%;
   transform: translateX(-50%);
-  margin-top: 8px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid #e5e7eb;
-  z-index: 9999;
+  z-index: 99999;
   width: 300px;
+  min-width: 300px;
   max-width: 90vw;
   animation: tooltipFadeIn 0.2s ease-out;
   pointer-events: auto;
@@ -114,11 +111,10 @@
   position: absolute;
   top: -6px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(45deg);
   width: 12px;
   height: 12px;
   background: white;
   border-left: 1px solid #e5e7eb;
   border-top: 1px solid #e5e7eb;
-  transform: translateX(-50%) rotate(45deg);
 }

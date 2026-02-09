@@ -235,7 +235,7 @@ export const saveMindMapState = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const { tree, title, documentId } = req.body;
+    const { tree, title, documentId, frameworkConfig } = req.body;
 
     let mindMap = await MindMap.findById(id);
 
@@ -312,6 +312,12 @@ export const saveMindMapState = async (req, res) => {
     if (documentId !== undefined) {
       mindMap.documentId = documentId;
       console.log(' Updating documentId:', documentId || 'removed');
+    }
+
+    // Update frameworkConfig
+    if (frameworkConfig !== undefined) {
+      mindMap.frameworkConfig = frameworkConfig;
+      console.log(' Updating frameworkConfig:', frameworkConfig?.enabled ? frameworkConfig.value : 'disabled');
     }
 
     // Update edit history
@@ -391,7 +397,7 @@ export const generateNodes = async (req, res, next) => {
       });
     }
 
-    const { nodeText, nodeTipo, count = 3, nodeContext, documentId } = req.body;
+    const { nodeText, nodeTipo, count = 3, nodeContext, documentId, frameworkConfig } = req.body;
 
     console.log('\n' + ''.repeat(80));
     console.log(' POST /api/mindmap/generate-nodes');
@@ -415,9 +421,15 @@ export const generateNodes = async (req, res, next) => {
       console.log(`  → PromptBuilder will use BASIC prompt`);
     }
 
+    if (frameworkConfig && frameworkConfig.enabled) {
+      console.log(`\n FRAMEWORK ENABLED:`);
+      console.log(`  • Type: ${frameworkConfig.type}`);
+      console.log(`  • Value: ${frameworkConfig.value}`);
+    }
+
     // Call OpenAI service
     console.log('\n Calling OpenAI service...');
-    const result = await openaiService.generateNodes(nodeText, nodeTipo, count, nodeContext, documentId);
+    const result = await openaiService.generateNodes(nodeText, nodeTipo, count, nodeContext, documentId, frameworkConfig);
 
     console.log(`\n Successfully generated ${result.nodes.length} nodes`);
     console.log('═'.repeat(80) + '\n');

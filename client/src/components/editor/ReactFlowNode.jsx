@@ -47,8 +47,7 @@ function calculateFontSize(text, width, height) {
 }
 
 const ReactFlowNode = ({ data }) => {
-  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly } = data;
-  const [showPopup, setShowPopup] = useState(false);
+  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, showDetailsPopup, onToggleDetailsPopup } = data;
   const [showSummarizePopup, setShowSummarizePopup] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   const [showChildOptions, setShowChildOptions] = useState(false);
@@ -79,7 +78,9 @@ const ReactFlowNode = ({ data }) => {
 
   const handleTogglePopup = (e) => {
     e.stopPropagation();
-    setShowPopup(!showPopup);
+    if (onToggleDetailsPopup) {
+      onToggleDetailsPopup(node.id);
+    }
   };
 
   const handleToggleSummarizePopup = (e) => {
@@ -282,31 +283,21 @@ const ReactFlowNode = ({ data }) => {
                 {node.collapsed ? '▶' : '▼'}
               </button>
             )}
-            {node.children && node.children.length > 1 && onSummarize && (
+            {node.id !== 'root' && (
               <button
-                className="node-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowSummarizePopup(true);
-                }}
-                title="Summarize Children"
+                className="node-action-btn node-feedback-btn"
+                onClick={handleToggleFeedbackPopup}
+                title={node.feedback?.rating !== null && node.feedback?.rating !== undefined
+                  ? `Feedback: ${node.feedback.rating}/4`
+                  : 'Add Feedback'}
+                style={getFeedbackButtonColor() ? {
+                  background: `linear-gradient(135deg, ${getFeedbackButtonColor()} 0%, ${getFeedbackButtonColor()}dd 100%)`,
+                  boxShadow: `0 4px 12px ${getFeedbackButtonColor()}80`
+                } : {}}
               >
-                ≡
+                ★
               </button>
             )}
-            <button
-              className="node-action-btn node-feedback-btn"
-              onClick={handleToggleFeedbackPopup}
-              title={node.feedback?.rating !== null && node.feedback?.rating !== undefined
-                ? `Feedback: ${node.feedback.rating}/4`
-                : 'Add Feedback'}
-              style={getFeedbackButtonColor() ? {
-                background: `linear-gradient(135deg, ${getFeedbackButtonColor()} 0%, ${getFeedbackButtonColor()}dd 100%)`,
-                boxShadow: `0 4px 12px ${getFeedbackButtonColor()}80`
-              } : {}}
-            >
-              ★
-            </button>
             <button
               className="node-action-btn node-menu-btn"
               onClick={handleToggleMenu}
@@ -317,11 +308,13 @@ const ReactFlowNode = ({ data }) => {
           </div>
         </div>
       )}
-      {showPopup && (node.description || node.source) && (
+      {showDetailsPopup && (node.description || node.source) && createPortal(
         <NodeDetailsPopup
           node={node}
-          onClose={() => setShowPopup(false)}
-        />
+          nodeRef={nodeRef}
+          onClose={() => onToggleDetailsPopup && onToggleDetailsPopup(node.id)}
+        />,
+        document.body
       )}
       {showSummarizePopup && (
         <SummarizePopup

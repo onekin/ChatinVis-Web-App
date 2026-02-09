@@ -100,8 +100,8 @@ export function editorReducer(state, action) {
       const { parentId, childNode } = action.payload;
       let newTree = addChildToNode(state.tree, parentId, childNode);
 
-      // No recalcular layout - mantener posición manual de los hijos
-      // newTree = applyDynamicLayout(newTree);
+      // Aplicar layout dinámico para posicionar correctamente
+      newTree = applyDynamicLayout(newTree);
 
       return addToHistory(state, newTree);
     }

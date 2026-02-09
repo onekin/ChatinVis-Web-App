@@ -257,10 +257,10 @@ function LogsViewer({ mapId, onClose }) {
 
       <div className="logs-viewer-actions">
         <button className="logs-action-btn" onClick={handleRefresh}>
-          🔄 Refresh
+           Refresh
         </button>
         <button className="logs-action-btn" onClick={handleExport}>
-          📥 Export CSV
+           Export CSV
         </button>
       </div>
 
@@ -272,7 +272,7 @@ function LogsViewer({ mapId, onClose }) {
           </div>
         ) : error ? (
           <div className="logs-error">
-            <div className="logs-error-icon">⚠️</div>
+            <div className="logs-error-icon"></div>
             <p>{error}</p>
             {error.includes('Invalid') && (
               <div style={{ fontSize: '12px', marginTop: '10px', color: '#666' }}>
@@ -282,7 +282,7 @@ function LogsViewer({ mapId, onClose }) {
           </div>
         ) : logs.length === 0 ? (
           <div className="logs-empty">
-            <div className="logs-empty-icon">📝</div>
+            <div className="logs-empty-icon"></div>
             <div className="logs-empty-text">No logs available</div>
             <div className="logs-empty-hint">
               Logs will be generated automatically when using the mind map

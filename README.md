@@ -48,12 +48,12 @@ ChatinVis-Web-App/
 
 ## Tech Stack
 
-| Layer | Technologies |
-|-------|--------------|
+| Layer | Technologies                                                           |
+|-------|------------------------------------------------------------------------|
 | **Frontend** | React 18, Vite, ReactFlow, Zustand, TanStack Query, Framer Motion, Axios |
-| **Backend** | Node.js, Express, LangChain, Mongoose, JWT, Winston, Helmet |
-| **Database** | MongoDB |
-| **LLM Providers** | OpenAI (GPT-4) |
+| **Backend** | Node.js, Express, LangChain, Mongoose, JWT, Winston, Helmet            |
+| **Database** | MongoDB                                                                |
+| **LLM Providers** | OpenAI (GPT-4)<br/>                                                         |
 
 ## Installation
 

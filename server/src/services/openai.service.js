@@ -21,7 +21,7 @@ class OpenAIService {
     console.log('ChatOpenAI instance created with 30s timeout and 2000 max tokens');
   }
 
-  async generateNodes(nodeText, nodeTipo, count = 3, nodeContextData = null, documentId = null) {
+  async generateNodes(nodeText, nodeTipo, count = 3, nodeContextData = null, documentId = null, frameworkConfig = null) {
     try {
       console.log('\n' + ''.repeat(80));
       console.log('GENERATE NODES - Entry Point');
@@ -30,6 +30,7 @@ class OpenAIService {
       console.log(`  • Node Text: "${nodeText}"`);
       console.log(`  • Node Type: ${nodeTipo}`);
       console.log(`  • Count: ${count}`);
+      console.log(`  • Framework: ${frameworkConfig?.enabled ? frameworkConfig.value : 'None'}`);
       console.log(`  • Document ID: ${documentId || 'None'}`);
 
       if (nodeContextData) {
@@ -50,7 +51,7 @@ class OpenAIService {
       }
 
       console.log('\nCalling generateNodesWithPromptBuilder...');
-      return this.generateNodesWithPromptBuilder(nodeText, nodeTipo, count, '', nodeContextData, documentId);
+      return this.generateNodesWithPromptBuilder(nodeText, nodeTipo, count, '', nodeContextData, documentId, frameworkConfig);
     } catch (error) {
       console.error('OpenAI generation error:', error.message);
       console.error('Full error:', error);
@@ -58,7 +59,7 @@ class OpenAIService {
     }
   }
 
-  async generateNodesWithPromptBuilder(nodeText, nodeTipo, count = 3, description = '', nodeContextData = null, documentId = null) {
+  async generateNodesWithPromptBuilder(nodeText, nodeTipo, count = 3, description = '', nodeContextData = null, documentId = null, frameworkConfig = null) {
     try {
       console.log('\n' + ''.repeat(80));
       console.log('GENERATE NODES WITH PROMPT BUILDER');
@@ -170,7 +171,7 @@ class OpenAIService {
 
       let result;
       try {
-        result = await this.generateStructuredNodes(nodeContext, question, promptType, options);
+        result = await this.generateStructuredNodes(nodeContext, question, promptType, options, frameworkConfig);
       } catch (structuredError) {
         console.error('generateStructuredNodes failed:', structuredError.message);
         throw structuredError;
@@ -223,7 +224,8 @@ class OpenAIService {
         null,
         question,
         'aggregation',
-        { nodes: formattedNodes, clusterCount }
+        { nodes: formattedNodes, clusterCount },
+        null  // No framework for aggregation
       );
 
       // Enrich cluster descriptions with information about merged nodes
@@ -382,7 +384,7 @@ class OpenAIService {
     return lines.map(text => ({ text }));
   }
 
-  async generateStructuredNodes(nodeContext, question, type = 'basic', options = {}) {
+  async generateStructuredNodes(nodeContext, question, type = 'basic', options = {}, frameworkConfig = null) {
     try {
       console.log(`\n${''.repeat(80)}`);
       console.log(`GENERATING STRUCTURED NODES (type: ${type})`);
@@ -458,7 +460,8 @@ class OpenAIService {
             options.answerNote,
             options.previousQuestion,
             options.firstQuestion,
-            options.model
+            options.model,
+            frameworkConfig
           );
           break;
         case 'suggested-logs':
@@ -495,7 +498,8 @@ class OpenAIService {
             options.answerLabel,
             options.answerNote,
             options.previousQuestion,
-            options.firstQuestion
+            options.firstQuestion,
+            frameworkConfig
           );
           break;
         default:
@@ -601,12 +605,12 @@ class OpenAIServiceProxy {
     return this.serviceInstance;
   }
 
-  generateNodes(nodeText, nodeTipo, count, nodeContextData, documentId) {
-    return this.getInstance().generateNodes(nodeText, nodeTipo, count, nodeContextData, documentId);
+  generateNodes(nodeText, nodeTipo, count, nodeContextData, documentId, frameworkConfig) {
+    return this.getInstance().generateNodes(nodeText, nodeTipo, count, nodeContextData, documentId, frameworkConfig);
   }
 
-  generateStructuredNodes(nodeContext, question, type, options) {
-    return this.getInstance().generateStructuredNodes(nodeContext, question, type, options);
+  generateStructuredNodes(nodeContext, question, type, options, frameworkConfig) {
+    return this.getInstance().generateStructuredNodes(nodeContext, question, type, options, frameworkConfig);
   }
 
   aggregateNodes(question, nodes, clusterCount) {
