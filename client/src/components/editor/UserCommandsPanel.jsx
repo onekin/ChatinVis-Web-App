@@ -51,13 +51,14 @@ const UserCommandsPanel = ({ onClose, onCreateNewCommand }) => {
 
     try {
       setIsCompiling(true);
-      toast.loading('Compiling command with LLM...', { id: 'compile-command' });
+      toast.loading('Compiling command with LLM...', { id: 'compile-command', duration: 20000 });
+      await new Promise(resolve => setTimeout(resolve, 10000));
       const result = await iaService.compileCommand(spec);
       if (result?.success) {
         setDescription(result.description || description);
         setPromptTemplate(result.prompt_template || promptTemplate);
         setCompiled(true);
-        toast.success('Command compiled', { id: 'compile-command' });
+        toast.success('Command compiled', { id: 'compile-command', duration: 20000 });
       } else {
         toast.error('Compilation failed', { id: 'compile-command' });
       }
