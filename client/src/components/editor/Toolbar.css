@@ -10,6 +10,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
 }
 
 .toolbar-group-label {
@@ -124,4 +125,62 @@
 
 .pdf-remove-btn span {
   display: none;
+}
+
+.user-command-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+  z-index: 1200;
+  overflow: hidden;
+}
+
+.user-command-menu-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-command-menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.user-command-menu-item:hover {
+  background: #f8fafc;
+}
+
+.user-command-menu-item:active {
+  transform: translateY(1px);
+}
+
+.user-command-menu-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.user-command-menu-desc {
+  font-size: 13px;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.user-command-menu-divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.user-command-menu-item.create {
+  font-weight: 700;
+  color: #4f46e5;
 }

@@ -3,6 +3,7 @@ import {
   generateNodes,
   generateNodeDetail,
   aggregateNodes,
+  compileCommand,
   createMindMap,
   getUserMindMaps,
   getMindMapById,
@@ -14,7 +15,8 @@ import {
 import {
   validateGenerateNodes,
   validateGenerateDetail,
-  validateAggregateNodes
+  validateAggregateNodes,
+  validateCompileCommand
 } from '../middleware/validate.js';
 import { protect } from '../middleware/auth.js';
 
@@ -25,6 +27,7 @@ const router = express.Router();
 router.post('/generate-nodes', validateGenerateNodes, generateNodes);
 router.post('/generate-detail', validateGenerateDetail, generateNodeDetail);
 router.post('/aggregate-nodes', validateAggregateNodes, aggregateNodes);
+router.post('/compile-command', validateCompileCommand, compileCommand);
 
 // ==================== DATABASE ROUTES ====================
 // All database routes require authentication

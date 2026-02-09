@@ -1,5 +1,5 @@
-import { Plus, Trash2, LayoutGrid, Undo, Redo, FileText, X, Download, FileSearch } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Plus, Trash2, LayoutGrid, Undo, Redo, FileText, X, Download, FileSearch, ListChecks } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import documentService from '../../services/documentService';
 import './Toolbar.css';
@@ -16,9 +16,14 @@ const Toolbar = ({
   documentId,
   onRemoveDocument,
   onShowLogs,
+  onShowUserCommands,
+  userCommands = [],
+  onRunUserCommand,
 }) => {
   const [documentName, setDocumentName] = useState(null);
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
+  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const commandMenuRef = useRef(null);
 
   useEffect(() => {
     const fetchDocumentInfo = async () => {
@@ -72,6 +77,25 @@ const Toolbar = ({
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast.error('Failed to download PDF', { id: 'download-pdf' });
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (commandMenuRef.current && !commandMenuRef.current.contains(event.target)) {
+        setIsCommandMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectCommand = (command) => {
+    setIsCommandMenuOpen(false);
+    if (onRunUserCommand) {
+      onRunUserCommand(command);
+    } else {
+      console.log('Selected command:', command);
     }
   };
 
@@ -162,6 +186,43 @@ const Toolbar = ({
           <span>Logs</span>
         </button>
       </div>
+      <div className="toolbar-group" ref={commandMenuRef}>
+        <button
+          className="toolbar-btn"
+          onClick={() => setIsCommandMenuOpen(prev => !prev)}
+          title="User commands"
+        >
+          <ListChecks size={18} />
+          <span>User commands</span>
+        </button>
+        {isCommandMenuOpen && (
+          <div className="user-command-menu">
+            <div className="user-command-menu-list">
+              {userCommands.map(cmd => (
+                <button
+                  key={cmd.id}
+                  className="user-command-menu-item"
+                  onClick={() => handleSelectCommand(cmd)}
+                >
+                  <div className="user-command-menu-title">{cmd.name}</div>
+                  <div className="user-command-menu-desc">{cmd.description}</div>
+                </button>
+              ))}
+            </div>
+            <div className="user-command-menu-divider" />
+            <button
+              className="user-command-menu-item create"
+              onClick={() => {
+                setIsCommandMenuOpen(false);
+                onShowUserCommands();
+              }}
+            >
+              + Create new command…
+            </button>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };

@@ -158,3 +158,46 @@ export const validateAggregateNodes = [
     next();
   }
 ];
+
+export const validateCompileCommand = [
+  body('objective')
+    .optional()
+    .isString()
+    .isLength({ max: 800 })
+    .withMessage('objective must be a string up to 800 chars'),
+  body('name')
+    .optional()
+    .isString()
+    .isLength({ max: 120 })
+    .withMessage('name must be a string up to 120 chars'),
+  body('scope')
+    .optional()
+    .isString()
+    .isLength({ max: 60 })
+    .withMessage('scope must be a string up to 60 chars'),
+  body('outputType')
+    .optional()
+    .isString()
+    .isLength({ max: 60 })
+    .withMessage('outputType must be a string up to 60 chars'),
+  body('constraints')
+    .optional()
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage('constraints must be a string up to 1000 chars'),
+  body('draftPrompt')
+    .optional()
+    .isString()
+    .isLength({ max: 1500 })
+    .withMessage('draftPrompt must be a string up to 1500 chars'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+    next();
+  }
+];

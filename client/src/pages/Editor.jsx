@@ -16,6 +16,7 @@ import './Editor.css';
 import Toolbar from '../components/editor/Toolbar';
 import SettingsPanel from '../components/editor/SettingsPanel';
 import LogsViewer from '../components/editor/LogsViewer';
+import UserCommandsPanel from '../components/editor/UserCommandsPanel';
 import NodeDetailPanel from '../components/editor/NodeDetailPanel';
 import MindMapNode from '../models/MindMapNode';
 import IAService from '../services/IAServices';
@@ -114,6 +115,13 @@ const Editor = () => {
   const location = useLocation();
   const initialMapId = location.state?.mapId;
   const [mapId, setMapId] = useState(initialMapId);
+  const userCommands = useMemo(() => [
+    {
+      id: 'comparative-table',
+      name: 'Comparative table',
+      description: 'Create a table comparing the selected nodes.',
+    },
+  ], []);
 
   // Estado del editor con reducer
   const initialRootNode = useMemo(() =>
@@ -137,6 +145,7 @@ const Editor = () => {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
+  const [isUserCommandsOpen, setIsUserCommandsOpen] = useState(false);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [documentId, setDocumentId] = useState(null);
 
@@ -1158,6 +1167,15 @@ const Editor = () => {
             console.log(' onShowLogs clicked - setting isLogsOpen to true');
             setIsLogsOpen(true);
           }}
+          onShowUserCommands={() => {
+            console.log(' onShowUserCommands clicked - setting isUserCommandsOpen to true');
+            setIsUserCommandsOpen(true);
+          }}
+          userCommands={userCommands}
+          onRunUserCommand={(command) => {
+            console.log('User command selected from menu:', command);
+            toast(`Command "${command.name}" selected (not implemented yet)`, { duration: 2000 });
+          }}
         />
       </div>
 
@@ -1193,6 +1211,14 @@ const Editor = () => {
           onClose={() => {
             console.log(' Closing LogsViewer');
             setIsLogsOpen(false);
+          }}
+        />
+      )}
+      {isUserCommandsOpen && (
+        <UserCommandsPanel
+          onClose={() => {
+            console.log(' Closing UserCommandsPanel');
+            setIsUserCommandsOpen(false);
           }}
         />
       )}

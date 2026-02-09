@@ -209,6 +209,44 @@ class PromptBuilder {
     prompt += '\n]\n' + '}';
     return prompt;
   }
+
+  static getPromptForCommandCompilation(spec) {
+    const {
+      name = '',
+      objective = '',
+      scope = '',
+      outputType = '',
+      constraints = '',
+      draftPrompt = ''
+    } = spec || {};
+
+    let prompt = 'You are an expert prompt engineer for a mind-mapping app (ChatinVis). ';
+    prompt += 'Given a user-defined command specification, produce a JSON object with two fields: ';
+    prompt += '"description" (1-2 sentences of what the command does) and "prompt_template" ';
+    prompt += '(an LLM-facing template that includes explicit placeholders and instructions).\n\n';
+
+    prompt += 'Command spec:\n';
+    prompt += `- Name: ${name || '(not provided)'}\n`;
+    prompt += `- Objective: ${objective || '(not provided)'}\n`;
+    prompt += `- Scope: ${scope || '(not provided)'}\n`;
+    prompt += `- Output type: ${outputType || '(not provided)'}\n`;
+    prompt += `- Constraints: ${constraints || '(none)'}\n`;
+    prompt += draftPrompt ? `- User draft prompt: ${draftPrompt}\n` : '';
+
+    prompt += '\nRules:\n';
+    prompt += '1) Return ONLY valid JSON (no markdown).\n';
+    prompt += '2) Use placeholders in braces, e.g., {selected_nodes}, {scope}, {output_type}, {params}.\n';
+    prompt += '3) The prompt_template must instruct the LLM to stay grounded on provided nodes and obey constraints.\n';
+    prompt += '4) Keep description concise (<= 2 sentences).\n';
+
+    prompt += '\nExpected JSON shape:\n';
+    prompt += '{\n';
+    prompt += '  "description": "<concise purpose>",\n';
+    prompt += '  "prompt_template": "<template with placeholders>"\n';
+    prompt += '}\n';
+
+    return prompt;
+  }
 }
 
 export default PromptBuilder;

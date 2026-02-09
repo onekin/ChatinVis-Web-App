@@ -125,6 +125,16 @@ class IAService {
     }
   }
 
+  async compileCommand(spec) {
+    try {
+      const response = await this.apiClient.post('/mindmap/compile-command', spec);
+      return response.data;
+    } catch (error) {
+      console.error('Command compilation failed:', error);
+      throw error;
+    }
+  }
+
   async aggregateNodes(question, nodes, clusterCount = 3) {
     try {
       console.log(`Aggregating ${nodes.length} nodes into ${clusterCount} clusters`);

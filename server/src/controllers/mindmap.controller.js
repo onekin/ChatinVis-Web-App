@@ -582,3 +582,55 @@ export const aggregateNodes = async (req, res, next) => {
     next(error);
   }
 };
+
+export const compileCommand = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { name, objective, scope, outputType, constraints, draftPrompt } = req.body;
+
+    console.log('\nPOST /api/mindmap/compile-command');
+    console.log(' Payload:', { name, objective, scope, outputType });
+
+    const spec = { name, objective, scope, outputType, constraints, draftPrompt };
+
+    const result = await openaiService.generateStructuredNodes(
+      null,
+      'Compile user command spec',
+      'command-compile',
+      { spec }
+    );
+
+    let description = '';
+    let promptTemplate = '';
+
+    if (result.parseError) {
+      console.warn('Failed to parse LLM response; returning raw');
+      description = result.raw || 'No description';
+      promptTemplate = result.raw || '';
+    } else if (result.description || result.prompt_template) {
+      description = result.description || '';
+      promptTemplate = result.prompt_template || '';
+    } else if (result.items && Array.isArray(result.items) && result.items.length > 0) {
+      const first = result.items[0];
+      description = first.description || '';
+      promptTemplate = first.prompt_template || first.prompt || '';
+    } else {
+      description = 'No description';
+      promptTemplate = '';
+    }
+
+    return res.json({
+      success: true,
+      description,
+      prompt_template: promptTemplate,
+      raw: result.raw || null
+    });
+  } catch (error) {
+    console.error(' compileCommand error:', error.message);
+    next(error);
+  }
+};

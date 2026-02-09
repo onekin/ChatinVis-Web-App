@@ -498,6 +498,11 @@ class OpenAIService {
             options.firstQuestion
           );
           break;
+        case 'command-compile':
+          console.log('\nCOMMAND COMPILATION PROMPT');
+          console.log('═'.repeat(80));
+          prompt = PromptBuilder.getPromptForCommandCompilation(options.spec || {});
+          break;
         default:
           throw new Error(`Unknown type: ${type}`);
       }
