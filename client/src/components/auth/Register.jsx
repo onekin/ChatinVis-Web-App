@@ -143,12 +143,11 @@ const Register = ({ onSwitchToLogin }) => {
         <div className="auth-header">
           <div className="auth-logo">
             <div className="auth-logo-icon">
-              <img src="/src/utils/logo.png" alt="MindInVis" />
+              <img src="/src/utils/logo.png" alt="ChatInVis" />
             </div>
-            <span className="auth-logo-text">MindInVis</span>
+            <span className="auth-logo-text">ChatInVis</span>
           </div>
           <h1 className="auth-title">Create your account</h1>
-          <p className="auth-subtitle">Start creating amazing mind maps</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

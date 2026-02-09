@@ -1,4 +1,4 @@
-# MindInVis
+# ChatinVis-Web-App
 
 > Web application for creating interactive mind maps powered by AI (LLMs)
 
@@ -7,9 +7,9 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?logo=mongodb)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## What is MindInVis?
+## What is ChatinVis?
 
-MindInVis is a full-stack web application for creating interactive mind maps with LLM integration. Users can ask questions and the system generates structured responses that are visualized as nodes in the mind map.
+ChatInVis is a full-stack web application for creating interactive mind maps with LLM integration. Users can ask questions and the system generates structured responses that are visualized as nodes in the mind map.
 
 ### Key Features
 
@@ -86,21 +86,27 @@ ChatinVis-Web-App/
 
    # Security
    JWT_SECRET=your-secret-key-here
+   JWT_EXPIRE=7d
 
    # Database
    MONGODB_URI=mongodb://localhost:27017/mindinvis
 
    # Server
    NODE_ENV=development
-   PORT=5000
-   ```
+   PORT=3001
+   
+   # CORS
+   CORS_ORIGIN=http://localhost:3000
 
+   # Logging
+   LOG_LEVEL=debug
+   ```
    Create `.env` in `client/`:
    ```env
    VITE_API_URL=http://localhost:5000
    ```
 
-4. **Initialize database**
+5. **Initialize database**
    ```bash
    node seed.js
    ```
@@ -159,3 +165,6 @@ MIT
 <p align="center">
   <sub>Based on ChatInVis Browser Extension</sub>
 </p>
+
+
+
