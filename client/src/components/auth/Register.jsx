@@ -113,7 +113,7 @@ const Register = ({ onSwitchToLogin }) => {
       );
       
       if (!result.success) {
-        setErrors({ general: result.error || 'Registration failed' });
+        setErrors({ general: result.error || 'A user with that email alredy exists' });
       }
     } catch (error) {
       setErrors({ general: 'An error occurred during registration' });
