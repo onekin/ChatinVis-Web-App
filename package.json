@@ -24,6 +24,7 @@
     "test:server": "cd server && npm run test"
   },
   "devDependencies": {
+    "baseline-browser-mapping": "^2.9.19",
     "concurrently": "^8.2.2"
   },
   "engines": {
