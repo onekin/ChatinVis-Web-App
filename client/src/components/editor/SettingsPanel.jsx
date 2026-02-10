@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Settings, X, Palette } from 'lucide-react';
+import { useMapData } from '../../context/MapDataContext';
+import { mapService } from '../../services/mapService';
+import { toast } from 'react-hot-toast';
 import './SettingsPanel.css';
 
-const SettingsPanel = ({ isOpen, onClose }) => {
+const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, currentDocumentId, onFrameworkSaved }) => {
+  const { frameworkConfig, updateFrameworkConfig } = useMapData();
   const [nodeCount, setNodeCount] = useState(3);
 
   // Default colors
@@ -17,18 +21,15 @@ const SettingsPanel = ({ isOpen, onClose }) => {
   const [frameworkValue, setFrameworkValue] = useState('cause-consequences');
   const [customFramework, setCustomFramework] = useState('');
 
-  // Load saved configuration
+  // Load saved configuration only when panel opens
   useEffect(() => {
+    if (!isOpen) return;
+    
     const savedNodeCount = localStorage.getItem('mindinvis_node_count') || '3';
     const savedQuestionBg = localStorage.getItem('mindinvis_question_bg') || '#1e3a8a';
     const savedQuestionBorder = localStorage.getItem('mindinvis_question_border') || '#3b82f6';
     const savedAnswerBg = localStorage.getItem('mindinvis_answer_bg') || '#065f46';
     const savedAnswerBorder = localStorage.getItem('mindinvis_answer_border') || '#10b981';
-
-    const savedFrameworkEnabled = localStorage.getItem('mindinvis_framework_enabled') === 'true';
-    const savedFrameworkType = localStorage.getItem('mindinvis_framework_type') || 'predefined';
-    const savedFrameworkValue = localStorage.getItem('mindinvis_framework_value') || 'cause-consequences';
-    const savedCustomFramework = localStorage.getItem('mindinvis_custom_framework') || '';
 
     setNodeCount(parseInt(savedNodeCount));
     setQuestionBgColor(savedQuestionBg);
@@ -36,13 +37,25 @@ const SettingsPanel = ({ isOpen, onClose }) => {
     setAnswerBgColor(savedAnswerBg);
     setAnswerBorderColor(savedAnswerBorder);
 
-    setFrameworkEnabled(savedFrameworkEnabled);
-    setFrameworkType(savedFrameworkType);
-    setFrameworkValue(savedFrameworkValue);
-    setCustomFramework(savedCustomFramework);
-  }, [isOpen]);
+    // Load framework from context
+    console.log('SettingsPanel: Loading framework config:', frameworkConfig);
+    if (frameworkConfig && frameworkConfig.enabled) {
+      setFrameworkEnabled(true);
+      setFrameworkType(frameworkConfig.type);
+      setFrameworkValue(frameworkConfig.value);
+      if (frameworkConfig.type === 'custom') {
+        setCustomFramework(frameworkConfig.value);
+      }
+    } else {
+      setFrameworkEnabled(false);
+      setFrameworkType('predefined');
+      setFrameworkValue('cause-consequences');
+      const savedCustom = localStorage.getItem('mindinvis_custom_framework') || '';
+      setCustomFramework(savedCustom);
+    }
+  }, [isOpen, frameworkConfig]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate custom framework if enabled
     if (frameworkEnabled && frameworkType === 'custom' && !customFramework.trim()) {
       alert('Please enter custom framework text or switch to predefined frameworks');
@@ -55,21 +68,40 @@ const SettingsPanel = ({ isOpen, onClose }) => {
     localStorage.setItem('mindinvis_answer_bg', answerBgColor);
     localStorage.setItem('mindinvis_answer_border', answerBorderColor);
 
-    localStorage.setItem('mindinvis_framework_enabled', frameworkEnabled.toString());
-    localStorage.setItem('mindinvis_framework_type', frameworkType);
-    localStorage.setItem('mindinvis_framework_value', frameworkType === 'predefined' ? frameworkValue : customFramework);
+    // Update framework config via context
+    const newFrameworkConfig = frameworkEnabled ? {
+      enabled: true,
+      type: frameworkType,
+      value: frameworkType === 'predefined' ? frameworkValue : customFramework
+    } : null;
+
+    console.log('SettingsPanel: Saving framework config:', newFrameworkConfig);
+    updateFrameworkConfig(newFrameworkConfig);
+
+    // Also save custom framework text separately
     localStorage.setItem('mindinvis_custom_framework', customFramework);
 
-    // Dispatch custom event with framework config
-    window.dispatchEvent(new CustomEvent('mindinvis-settings-updated', {
-      detail: {
-        frameworkConfig: {
-          enabled: frameworkEnabled,
-          type: frameworkType,
-          value: frameworkType === 'predefined' ? frameworkValue : customFramework
+    // Auto-save to database if map exists
+    if (mapId) {
+      try {
+        toast.loading('Saving settings to map...', { id: 'save-settings' });
+        await mapService.saveMindMapState(mapId, {
+          tree: currentTree,
+          title: currentMapName,
+          documentId: currentDocumentId,
+          frameworkConfig: newFrameworkConfig
+        });
+        toast.success('Settings saved!', { id: 'save-settings' });
+        
+        // Reload framework from DB to ensure Editor has the latest value
+        if (onFrameworkSaved) {
+          await onFrameworkSaved();
         }
+      } catch (error) {
+        console.error('Error saving framework to database:', error);
+        toast.error('Failed to save settings to map', { id: 'save-settings' });
       }
-    }));
+    }
 
     onClose();
   };
@@ -91,10 +123,10 @@ const SettingsPanel = ({ isOpen, onClose }) => {
     localStorage.removeItem('mindinvis_question_border');
     localStorage.removeItem('mindinvis_answer_bg');
     localStorage.removeItem('mindinvis_answer_border');
-    localStorage.removeItem('mindinvis_framework_enabled');
-    localStorage.removeItem('mindinvis_framework_type');
-    localStorage.removeItem('mindinvis_framework_value');
     localStorage.removeItem('mindinvis_custom_framework');
+
+    // Reset framework via context
+    updateFrameworkConfig(null);
   };
 
   if (!isOpen) return null;

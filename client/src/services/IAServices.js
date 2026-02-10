@@ -14,6 +14,8 @@ class IAService {
 
   async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null, frameworkConfig = null) {
     try {
+      console.log('IAService: generateNodes called with frameworkConfig:', frameworkConfig);
+      
       // Map English types to Spanish for API compatibility
       const typeMap = {
         'question': 'pregunta',

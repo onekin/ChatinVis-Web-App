@@ -20,10 +20,29 @@ class MindMapNode {
     this.initialX = x;
     this.initialY = y;
 
-    // Dimensions and style
-    this.width = 200;
-    this.height = 80;
-    this.fontSize = 16;
+    // Dimensions and style - Calculate dynamically based on text length
+    const textLength = text.length;
+    if (textLength <= 30) {
+      this.width = 200;
+      this.height = 80;
+      this.fontSize = 16;
+    } else if (textLength <= 60) {
+      this.width = 220;
+      this.height = 90;
+      this.fontSize = 14;
+    } else if (textLength <= 100) {
+      this.width = 250;
+      this.height = 100;
+      this.fontSize = 13;
+    } else if (textLength <= 150) {
+      this.width = 280;
+      this.height = 120;
+      this.fontSize = 12;
+    } else {
+      this.width = 300;
+      this.height = 140;
+      this.fontSize = 11;
+    }
 
     // Assign colors based on type and saved configuration
     if (type === 'question') {

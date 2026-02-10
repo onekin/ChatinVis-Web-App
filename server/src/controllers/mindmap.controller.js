@@ -317,6 +317,7 @@ export const saveMindMapState = async (req, res) => {
     // Update frameworkConfig
     if (frameworkConfig !== undefined) {
       mindMap.frameworkConfig = frameworkConfig;
+      mindMap.markModified('frameworkConfig'); // Required for Mixed type
       console.log(' Updating frameworkConfig:', frameworkConfig?.enabled ? frameworkConfig.value : 'disabled');
     }
 

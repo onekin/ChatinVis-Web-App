@@ -1,4 +1,4 @@
-import { useState, useReducer, useEffect, useMemo, useCallback } from 'react';
+import { useState, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Save, Share2, Settings } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
@@ -24,6 +24,7 @@ import nodeLogService from '../services/nodeLogService';
 import { editorReducer, getInitialState, actionCreators } from '../reducers/editorReducer';
 import { findNodeById, calculateChildrenPositions, findParentNode, getNodePath } from '../utils/nodeUtils';
 import ReactFlowNode from '../components/editor/ReactFlowNode';
+import { useMapData } from '../context/MapDataContext';
 
 const nodeTypes = {
   custom: ReactFlowNode,
@@ -144,7 +145,15 @@ const Editor = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [documentId, setDocumentId] = useState(null);
   const [detailsPopupNodeId, setDetailsPopupNodeId] = useState(null);
-  const [frameworkConfig, setFrameworkConfig] = useState(null);
+
+  // Get framework config from context
+  const { frameworkConfig, updateFrameworkConfig } = useMapData();
+  
+  // Use a ref to always have the latest frameworkConfig value
+  const frameworkConfigRef = useRef(frameworkConfig);
+  useEffect(() => {
+    frameworkConfigRef.current = frameworkConfig;
+  }, [frameworkConfig]);
 
   // State to show/hide sidebar
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -155,18 +164,6 @@ const Editor = () => {
     console.log('PDF uploaded, updating documentId:', documentId);
     setDocumentId(documentId);
     toast.success('PDF linked to this mind map. RAG is now active!', { duration: 3000 });
-  }, []);
-
-  const loadFrameworkConfig = useCallback(() => {
-    const enabled = localStorage.getItem('mindinvis_framework_enabled') === 'true';
-    const type = localStorage.getItem('mindinvis_framework_type') || 'predefined';
-    const value = localStorage.getItem('mindinvis_framework_value') || 'cause-consequences';
-
-    if (enabled) {
-      setFrameworkConfig({ enabled, type, value });
-    } else {
-      setFrameworkConfig(null);
-    }
   }, []);
 
   const handleRemoveDocument = useCallback(async () => {
@@ -188,6 +185,26 @@ const Editor = () => {
       }
     }
   }, [mapId, state.tree, mapName]);
+
+  // Function to reload framework from database
+  const reloadFrameworkFromDB = useCallback(async () => {
+    if (!mapId) return;
+    
+    try {
+      console.log('Reloading framework config from DB...');
+      const mapData = await mapService.getMapById(mapId);
+      
+      if (mapData.frameworkConfig && mapData.frameworkConfig.enabled) {
+        console.log(' Framework config reloaded:', mapData.frameworkConfig);
+        updateFrameworkConfig(mapData.frameworkConfig);
+      } else {
+        console.log(' No framework config in map');
+        updateFrameworkConfig(null);
+      }
+    } catch (error) {
+      console.error('Error reloading framework:', error);
+    }
+  }, [mapId, updateFrameworkConfig]);
 
   // Load map from database if mapId exists
   useEffect(() => {
@@ -213,9 +230,14 @@ const Editor = () => {
           console.log(' PDF documentId loaded:', mapData.documentId);
         }
 
-        if (mapData.frameworkConfig) {
-          setFrameworkConfig(mapData.frameworkConfig);
-          console.log(' Framework config loaded:', mapData.frameworkConfig);
+        // Load framework config from map data and update context
+        if (mapData.frameworkConfig && mapData.frameworkConfig.enabled) {
+          console.log(' Framework config loaded from map:', mapData.frameworkConfig);
+          updateFrameworkConfig(mapData.frameworkConfig);
+        } else {
+          // If map has no framework config, clear the context
+          console.log(' No framework config in map, clearing context');
+          updateFrameworkConfig(null);
         }
 
         // Check if we have a saved tree structure
@@ -331,26 +353,6 @@ const Editor = () => {
     loadMap();
   }, [mapId, dispatch]);
 
-  // Load framework configuration
-  useEffect(() => {
-    loadFrameworkConfig();
-
-    // Listen for settings updates
-    const handleSettingsUpdate = (event) => {
-      if (event.detail?.frameworkConfig) {
-        setFrameworkConfig(event.detail.frameworkConfig);
-      } else {
-        loadFrameworkConfig();
-      }
-    };
-
-    window.addEventListener('mindinvis-settings-updated', handleSettingsUpdate);
-
-    return () => {
-      window.removeEventListener('mindinvis-settings-updated', handleSettingsUpdate);
-    };
-  }, [loadFrameworkConfig]);
-
   // Auto-create map when starting fresh (no mapId)
   useEffect(() => {
     const createInitialMap = async () => {
@@ -384,6 +386,12 @@ const Editor = () => {
 
     return () => clearTimeout(timer);
   }, []); // Only run once on mount
+
+  // Debug: Log when frameworkConfig changes
+  useEffect(() => {
+    console.log('Editor: frameworkConfig changed to:', frameworkConfig);
+  }, [frameworkConfig]);
+
   // Sync map name with root node text
   useEffect(() => {
     if (state.tree && state.tree.text) {
@@ -770,13 +778,14 @@ const Editor = () => {
           }
         : null;
 
+      console.log('Editor: Generating nodes with frameworkConfig:', frameworkConfigRef.current);
       const responses = await iaService.generateNodes(
         parentNode.text,
         parentNode.type,
         nodeCount,
         nodeContext,
         documentId,
-        frameworkConfig
+        frameworkConfigRef.current
       );
 
       const positions = calculateChildrenPositions(parentNode, responses.length, state.tree);
@@ -801,10 +810,15 @@ const Editor = () => {
           citation
         );
 
-        // If PDF is uploaded, make nodes purple
+        // If PDF is uploaded, make nodes lighter
         if (documentId) {
-          childNode.backgroundColor = '#6b21a8';
-          childNode.borderColor = '#a855f7';
+          if (childType === 'question') {
+            childNode.backgroundColor = '#3b82f6';
+            childNode.borderColor = '#60a5fa';
+          } else if (childType === 'answer') {
+            childNode.backgroundColor = '#10b981';
+            childNode.borderColor = '#34d399';
+          }
         }
 
         return childNode;
@@ -836,9 +850,9 @@ const Editor = () => {
 
       const citationCount = childrenNodes.filter(n => n.citation).length;
       if (documentId && citationCount > 0) {
-        toast.success(`✅ Generated ${childrenNodes.length} nodes with ${citationCount} PDF citations`, { id: 'generate' });
+        toast.success(`✅ Generated ${childrenNodes.length} nodes with ${citationCount} PDF citations`, { id: 'generate', duration: 3000 });
       } else {
-        toast.success(`✅ Generated ${childrenNodes.length} nodes`, { id: 'generate' });
+        toast.success(`✅ Generated ${childrenNodes.length} nodes`, { id: 'generate', duration: 3000 });
       }
     } catch (error) {
       console.error('Failed to generate nodes:', error);
@@ -928,13 +942,14 @@ const Editor = () => {
         // Call real API with node type and optional context
         // Send PARENT TYPE (not child) so server knows whether to use context
         const nodeCount = parseInt(localStorage.getItem('mindinvis_node_count') || '3');
+        console.log('Editor: Generating nodes from edit with frameworkConfig:', frameworkConfigRef.current);
         const responses = await iaService.generateNodes(
           editingText,
           currentNode.type,  // PARENT TYPE (question or answer)
           nodeCount, // Number of nodes to generate from config
           nodeContext,
           documentId,  // Pass documentId for RAG
-          frameworkConfig  // Pass framework config
+          frameworkConfigRef.current  // Pass framework config from ref for latest value
         );
 
         const positions = calculateChildrenPositions(currentNode, responses.length, state.tree);
@@ -962,10 +977,15 @@ const Editor = () => {
             citation
           );
 
-          // If PDF is uploaded, make nodes purple
+          // If PDF is uploaded, make nodes lighter
           if (documentId) {
-            childNode.backgroundColor = '#6b21a8';
-            childNode.borderColor = '#a855f7';
+            if (childType === 'question') {
+              childNode.backgroundColor = '#3b82f6';
+              childNode.borderColor = '#60a5fa';
+            } else if (childType === 'answer') {
+              childNode.backgroundColor = '#10b981';
+              childNode.borderColor = '#34d399';
+            }
           }
 
           return childNode;
@@ -998,9 +1018,9 @@ const Editor = () => {
 
         const citationCount = childrenNodes.filter(n => n.citation).length;
         if (documentId && citationCount > 0) {
-          toast.success(`✅ Generated ${childrenNodes.length} nodes with ${citationCount} PDF citations`, { id: 'generate' });
+          toast.success(`✅ Generated ${childrenNodes.length} nodes with ${citationCount} PDF citations`, { id: 'generate', duration: 3000 });
         } else {
-          toast.success(`✅ Generated ${childrenNodes.length} nodes`, { id: 'generate' });
+          toast.success(`✅ Generated ${childrenNodes.length} nodes`, { id: 'generate', duration: 3000 });
         }
       } catch (error) {
         console.error('Failed to generate nodes:', error);
@@ -1101,7 +1121,7 @@ const Editor = () => {
           title: mapName,
           treeStructure: state.tree,
           documentId: documentId,
-          frameworkConfig: frameworkConfig
+          frameworkConfig: frameworkConfigRef.current  // Use ref to get latest value
         });
 
         console.log('New map created with ID:', newMap._id);
@@ -1116,7 +1136,7 @@ const Editor = () => {
         tree: state.tree,
         title: mapName,
         documentId: documentId,
-        frameworkConfig: frameworkConfig
+        frameworkConfig: frameworkConfigRef.current  // Use ref to get latest value
       });
 
       toast.success('Map saved successfully!', { id: 'save-map' });
@@ -1124,7 +1144,7 @@ const Editor = () => {
       console.error('Error saving map:', error);
       toast.error('Failed to save map. Please try again.', { id: 'save-map' });
     }
-  }, [mapId, state.tree, mapName, documentId]);
+  }, [mapId, state.tree, mapName, documentId, frameworkConfig]);
 
   return (
     <div className="editor-container">
@@ -1201,6 +1221,11 @@ const Editor = () => {
       <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        mapId={mapId}
+        currentTree={state.tree}
+        currentMapName={mapName}
+        currentDocumentId={documentId}
+        onFrameworkSaved={reloadFrameworkFromDB}
       />
 
       {/* Logs Viewer */}

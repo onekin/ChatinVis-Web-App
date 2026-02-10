@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mapService } from '../services/mapService';
 
@@ -6,6 +6,39 @@ const MapDataContext = createContext(null);
 
 export const MapDataProvider = ({ children }) => {
   const queryClient = useQueryClient();
+
+  // Framework state management
+  const [frameworkConfig, setFrameworkConfig] = useState(() => {
+    const enabled = localStorage.getItem('mindinvis_framework_enabled') === 'true';
+    if (!enabled) {
+      return null;
+    }
+    
+    const type = localStorage.getItem('mindinvis_framework_type') || 'predefined';
+    const value = localStorage.getItem('mindinvis_framework_value') || 'cause-consequences';
+    
+    return { enabled: true, type, value };
+  });
+
+  // Update framework configuration
+  const updateFrameworkConfig = (config) => {
+    console.log('MapDataContext: Updating framework config:', config);
+    setFrameworkConfig(config);
+    if (config && config.enabled) {
+      console.log('MapDataContext: Saving to localStorage:', {
+        type: config.type,
+        value: config.value
+      });
+      localStorage.setItem('mindinvis_framework_enabled', 'true');
+      localStorage.setItem('mindinvis_framework_type', config.type);
+      localStorage.setItem('mindinvis_framework_value', config.value);
+    } else {
+      console.log('MapDataContext: Removing from localStorage');
+      localStorage.removeItem('mindinvis_framework_enabled');
+      localStorage.removeItem('mindinvis_framework_type');
+      localStorage.removeItem('mindinvis_framework_value');
+    }
+  };
 
   // Fetch all maps
   const { data: allMaps = [], isLoading: isLoadingAllMaps } = useQuery({
@@ -161,6 +194,10 @@ export const MapDataProvider = ({ children }) => {
     templates,
     recentMaps,
     allMaps,
+
+    // Framework configuration
+    frameworkConfig,
+    updateFrameworkConfig,
 
     // Loading states
     isLoadingAllMaps,

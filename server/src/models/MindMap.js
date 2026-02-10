@@ -64,19 +64,8 @@ const mindMapSchema = new mongoose.Schema(
       default: null
     },
     frameworkConfig: {
-      type: {
-        type: String,
-        enum: ['predefined', 'custom'],
-        default: null
-      },
-      value: {
-        type: String,
-        default: null
-      },
-      enabled: {
-        type: Boolean,
-        default: false
-      }
+      type: mongoose.Schema.Types.Mixed,
+      default: null
     },
     collaborators: [
       {
