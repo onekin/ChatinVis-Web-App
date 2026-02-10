@@ -338,7 +338,6 @@ const Editor = () => {
             toast.success('Map loaded (root only)', { id: 'load-map' });
           } else {
             console.warn(' No root node found in map data');
-            toast.error('Invalid map structure', { id: 'load-map' });
           }
         } else {
           console.log('Map has no nodes, starting fresh');

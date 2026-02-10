@@ -35,11 +35,13 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 0);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);

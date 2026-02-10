@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { createPortal } from 'react-dom';
 import './Node.css';
@@ -54,6 +54,30 @@ const ReactFlowNode = ({ data }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const nodeRef = useRef(null);
+  const childOptionsRef = useRef(null);
+  const childButtonRef = useRef(null);
+
+  // Close child options popup when clicking outside
+  useEffect(() => {
+    if (!showChildOptions) return;
+
+    const handleClickOutside = (event) => {
+      if (childOptionsRef.current &&
+          !childOptionsRef.current.contains(event.target) &&
+          childButtonRef.current &&
+          !childButtonRef.current.contains(event.target)) {
+        setShowChildOptions(false);
+      }
+    };
+
+    setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 0);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [showChildOptions]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -135,8 +159,17 @@ const ReactFlowNode = ({ data }) => {
     }
   };
 
+  const [childOptionsPosition, setChildOptionsPosition] = useState({ top: 0, left: 0 });
+
   const handleToggleChildOptions = (e) => {
     e.stopPropagation();
+    if (!showChildOptions && childButtonRef.current) {
+      const rect = childButtonRef.current.getBoundingClientRect();
+      setChildOptionsPosition({
+        top: rect.bottom + 8,
+        left: rect.left + rect.width / 2 - 130 // 130 = half of popup width (260px)
+      });
+    }
     setShowChildOptions(!showChildOptions);
   };
 
@@ -221,6 +254,7 @@ const ReactFlowNode = ({ data }) => {
       )}
       {!isEditing && (
         <button
+          ref={childButtonRef}
           className="node-add-child-button"
           onClick={handleToggleChildOptions}
           title="Add Child Node"
@@ -345,8 +379,8 @@ const ReactFlowNode = ({ data }) => {
         />,
         document.body
       )}
-      {showChildOptions && (
-        <div className="child-options-popup">
+      {showChildOptions && createPortal(
+        <div className="child-options-popup" ref={childOptionsRef} style={{ top: childOptionsPosition.top, left: childOptionsPosition.left }}>
           <button className="popup-close" onClick={() => setShowChildOptions(false)}>×</button>
           <div className="popup-content">
             <h3 className="popup-title">Add Child</h3>
@@ -367,7 +401,8 @@ const ReactFlowNode = ({ data }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <Handle type="source" position={Position.Right} />
     </div>
