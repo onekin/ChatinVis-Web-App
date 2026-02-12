@@ -29,6 +29,7 @@ import authRoutes from './routes/auth.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import documentRoutes from './routes/document.routes.js';
 import nodeLogRoutes from './routes/nodelog.routes.js';
+import userCommandRoutes from './routes/user-command.routes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -64,6 +65,7 @@ app.use('/api/mindmap', mindmapRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/logs', nodeLogRoutes);
+app.use('/api/user-commands', userCommandRoutes);
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'));

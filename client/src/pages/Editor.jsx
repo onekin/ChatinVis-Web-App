@@ -17,6 +17,8 @@ import Toolbar from '../components/editor/Toolbar';
 import SettingsPanel from '../components/editor/SettingsPanel';
 import LogsViewer from '../components/editor/LogsViewer';
 import NodeDetailPanel from '../components/editor/NodeDetailPanel';
+import CommandExecutionMenu from '../components/editor/CommandExecutionMenu';
+import UserCommandsPanel from '../components/editor/UserCommandsPanel';
 import MindMapNode from '../models/MindMapNode';
 import IAService from '../services/IAServices';
 import { mapService } from '../services/mapService';
@@ -143,8 +145,15 @@ const Editor = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [isUserCommandsOpen, setIsUserCommandsOpen] = useState(false);
   const [documentId, setDocumentId] = useState(null);
   const [detailsPopupNodeId, setDetailsPopupNodeId] = useState(null);
+  
+  // User commands state
+  const [userCommands, setUserCommands] = useState([]);
+  const [commandMenuVisible, setCommandMenuVisible] = useState(false);
+  const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 });
+  const [commandMenuNode, setCommandMenuNode] = useState(null);
 
   // Get framework config from context
   const { frameworkConfig, updateFrameworkConfig } = useMapData();
@@ -164,6 +173,20 @@ const Editor = () => {
     console.log('PDF uploaded, updating documentId:', documentId);
     setDocumentId(documentId);
     toast.success('PDF linked to this mind map. RAG is now active!', { duration: 3000 });
+  }, []);
+
+  // Load user commands on mount
+  useEffect(() => {
+    const loadUserCommands = async () => {
+      try {
+        const commands = await iaService.getUserCommands();
+        console.log('Loaded user commands:', commands);
+        setUserCommands(commands);
+      } catch (error) {
+        console.error('Failed to load user commands:', error);
+      }
+    };
+    loadUserCommands();
   }, []);
 
   const handleRemoveDocument = useCallback(async () => {
@@ -449,6 +472,18 @@ const Editor = () => {
 
   // Simple click handler: select node
   const handleNodeClick = useCallback((e, node) => {
+    // Ctrl/Cmd + Click - open command menu
+    if (e.ctrlKey || e.metaKey) {
+      e.stopPropagation();
+      setCommandMenuNode(node);
+      setCommandMenuPosition({
+        x: e.clientX,
+        y: e.clientY
+      });
+      setCommandMenuVisible(true);
+      return;
+    }
+
     if (e.button === 2) {
       // Right click - open detail panel
       setSelectedNodeId(node.id);
@@ -459,6 +494,65 @@ const Editor = () => {
     e.stopPropagation();
     setSelectedNodeId(node.id);
     setDetailsPopupNodeId(null); // Close details popup when clicking on another node
+  }, []);
+
+  // Handler for command execution result
+  const handleCommandExecute = useCallback((result, command) => {
+    console.log('Command executed:', command.name, result);
+    
+    // Prepare file content and extension
+    let content = result.result;
+    let extension = 'txt';
+    let mimeType = 'text/plain';
+    
+    switch (command.outputType) {
+      case 'text':
+        extension = 'txt';
+        mimeType = 'text/plain';
+        if (typeof content !== 'string') {
+          content = JSON.stringify(content, null, 2);
+        }
+        break;
+        
+      case 'json':
+        extension = 'json';
+        mimeType = 'application/json';
+        content = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+        break;
+        
+      case 'html snippet':
+        extension = 'html';
+        mimeType = 'text/html';
+        break;
+        
+      case 'svg':
+        extension = 'svg';
+        mimeType = 'image/svg+xml';
+        break;
+        
+      default:
+        if (typeof content !== 'string') {
+          content = JSON.stringify(content, null, 2);
+        }
+    }
+    
+    // Create filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `${command.name}_${timestamp}.${extension}`;
+    
+    // Create blob and download
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success(`Result saved as ${filename}`);
+    console.log('Result saved:', filename, content);
   }, []);
 
   // Double click handler: enter edit mode
@@ -1194,6 +1288,7 @@ const Editor = () => {
             console.log(' onShowLogs clicked - setting isLogsOpen to true');
             setIsLogsOpen(true);
           }}
+          onShowUserCommands={() => setIsUserCommandsOpen(true)}
         />
       </div>
 
@@ -1245,6 +1340,29 @@ const Editor = () => {
           node={selectedNode}
           onClose={() => setIsDetailPanelOpen(false)}
           onUpdateDescription={handleUpdateDescription}
+        />
+      )}
+
+      {/* User Commands Panel */}
+      {isUserCommandsOpen && (
+        <UserCommandsPanel
+          onClose={() => setIsUserCommandsOpen(false)}
+          onCreateNewCommand={() => {
+            console.log('Creating new command');
+          }}
+        />
+      )}
+
+      {/* Command Execution Menu */}
+      {commandMenuVisible && commandMenuNode && (
+        <CommandExecutionMenu
+          node={commandMenuNode}
+          nodes={nodes}
+          edges={edges}
+          commands={userCommands}
+          onExecute={handleCommandExecute}
+          onClose={() => setCommandMenuVisible(false)}
+          position={commandMenuPosition}
         />
       )}
 

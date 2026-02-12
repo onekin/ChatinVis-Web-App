@@ -158,3 +158,152 @@ export const validateAggregateNodes = [
     next();
   }
 ];
+
+export const validateCompileCommand = [
+  body('objective')
+    .optional()
+    .isString()
+    .isLength({ max: 800 })
+    .withMessage('objective must be a string up to 800 chars'),
+  body('name')
+    .optional()
+    .isString()
+    .isLength({ max: 120 })
+    .withMessage('name must be a string up to 120 chars'),
+  body('scope')
+    .optional()
+    .isString()
+    .isLength({ max: 60 })
+    .withMessage('scope must be a string up to 60 chars'),
+  body('outputType')
+    .optional()
+    .isString()
+    .isLength({ max: 60 })
+    .withMessage('outputType must be a string up to 60 chars'),
+  body('constraints')
+    .optional()
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage('constraints must be a string up to 1000 chars'),
+  body('draftPrompt')
+    .optional()
+    .isString()
+    .isLength({ max: 1500 })
+    .withMessage('draftPrompt must be a string up to 1500 chars'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+    next();
+  }
+];
+export const validateCreateUserCommand = [
+  body('name')
+      .isString()
+      .isLength({ min: 3, max: 120 })
+      .withMessage('name must be 3-120 characters'),
+  body('description')
+      .isString()
+      .isLength({ min: 10, max: 500 })
+      .withMessage('description must be 10-500 characters'),
+  body('prompt_template')
+      .isString()
+      .isLength({ min: 20, max: 3000 })
+      .withMessage('prompt_template must be 20-3000 characters'),
+  body('scope')
+      .isString()
+      .isIn(['single_node', 'node_and_subnodes', 'selection', 'graph'])
+      .withMessage('invalid scope'),
+  body('outputType')
+      .isString()
+      .isIn(['text', 'svg', 'json', 'html snippet'])
+      .withMessage('invalid outputType'),
+  body('constraints')
+      .optional()
+      .isString()
+      .isLength({ max: 1000 })
+      .withMessage('constraints must be <= 1000 characters'),
+  body('originalSpec')
+      .optional()
+      .isObject()
+      .withMessage('originalSpec must be an object'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+    next();
+  }
+];
+
+export const validateUpdateUserCommand = [
+  body('name')
+      .optional()
+      .isString()
+      .isLength({ min: 3, max: 120 })
+      .withMessage('name must be 3-120 characters'),
+  body('description')
+      .optional()
+      .isString()
+      .isLength({ min: 10, max: 500 })
+      .withMessage('description must be 10-500 characters'),
+  body('prompt_template')
+      .optional()
+      .isString()
+      .isLength({ min: 20, max: 3000 })
+      .withMessage('prompt_template must be 20-3000 characters'),
+  body('constraints')
+      .optional()
+      .isString()
+      .isLength({ max: 1000 })
+      .withMessage('constraints must be <= 1000 characters'),
+  body('isPublic')
+      .optional()
+      .isBoolean()
+      .withMessage('isPublic must be boolean'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+    next();
+  }
+];
+
+export const validateExecuteUserCommand = [
+  body('commandId')
+      .isString()
+      .isMongoId()
+      .withMessage('commandId must be a valid MongoDB ID'),
+  body('selectedNodes')
+      .isArray({ min: 1 })
+      .withMessage('selectedNodes must be a non-empty array'),
+  body('selectedNodes.*.text')
+      .optional()
+      .isString()
+      .withMessage('node text must be a string'),
+  body('params')
+      .optional()
+      .isObject()
+      .withMessage('params must be an object'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+    next();
+  }
+];

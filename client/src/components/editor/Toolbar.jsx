@@ -1,4 +1,4 @@
-import { Plus, Trash2, LayoutGrid, Undo, Redo, FileText, X, Download, FileSearch } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, Undo, Redo, FileText, X, Download, FileSearch, Terminal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import documentService from '../../services/documentService';
@@ -16,6 +16,7 @@ const Toolbar = ({
   documentId,
   onRemoveDocument,
   onShowLogs,
+  onShowUserCommands,
 }) => {
   const [documentName, setDocumentName] = useState(null);
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
@@ -149,6 +150,17 @@ const Toolbar = ({
         >
           <Redo size={18} />
           <span>Redo</span>
+        </button>
+      </div>
+      <div className="toolbar-group">
+        <span className="toolbar-group-label">Commands</span>
+        <button
+          className="toolbar-btn"
+          onClick={onShowUserCommands}
+          title="User-defined commands"
+        >
+          <Terminal size={18} />
+          <span>My Commands</span>
         </button>
       </div>
       <div className="toolbar-group">

@@ -616,6 +616,10 @@ class OpenAIServiceProxy {
   aggregateNodes(question, nodes, clusterCount) {
     return this.getInstance().aggregateNodes(question, nodes, clusterCount);
   }
+
+  get llm() {
+    return this.getInstance().llm;
+  }
 }
 
 export default new OpenAIServiceProxy();

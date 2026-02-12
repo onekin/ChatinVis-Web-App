@@ -11,6 +11,7 @@ import {
   saveMindMapState,
   getRecentMindMaps
 } from '../controllers/mindmap.controller.js';
+import { compileUserCommand } from '../controllers/user-command.controller.js';
 import {
   validateGenerateNodes,
   validateGenerateDetail,
@@ -25,6 +26,9 @@ const router = express.Router();
 router.post('/generate-nodes', validateGenerateNodes, generateNodes);
 router.post('/generate-detail', validateGenerateDetail, generateNodeDetail);
 router.post('/aggregate-nodes', validateAggregateNodes, aggregateNodes);
+
+// Compile user command (requires auth)
+router.post('/compile-command', protect, compileUserCommand);
 
 // ==================== DATABASE ROUTES ====================
 // All database routes require authentication

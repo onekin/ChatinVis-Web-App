@@ -9,13 +9,20 @@ class IAService {
         'Content-Type': 'application/json'
       }
     });
+
+    // Add auth token to requests
+    this.apiClient.interceptors.request.use((config) => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
   }
 
 
-  async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null, frameworkConfig = null) {
+  async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null) {
     try {
-      console.log('IAService: generateNodes called with frameworkConfig:', frameworkConfig);
-      
       // Map English types to Spanish for API compatibility
       const typeMap = {
         'question': 'pregunta',
@@ -29,8 +36,7 @@ class IAService {
         nodeTipo: mappedTipo,
         count,
         nodeContext,
-        documentId,
-        frameworkConfig
+        documentId
       });
 
       if (response.data.success && response.data.nodes) {
@@ -125,6 +131,84 @@ class IAService {
       return `This is an important question that requires in-depth analysis. The concept "${nodeText}" involves multiple aspects that should be carefully considered to gain a complete understanding of the topic.`;
     } else {
       return `The concept "${nodeText}" is a key answer that addresses fundamental aspects of the topic. Its importance lies in how it connects different ideas and provides a valuable perspective for exploring the mind map.`;
+    }
+  }
+
+  async compileCommand(spec) {
+    try {
+      const response = await this.apiClient.post('/mindmap/compile-command', spec);
+      return response.data;
+    } catch (error) {
+      console.error('Command compilation failed:', error);
+      throw error;
+    }
+  }
+
+  // ==================== USER COMMANDS CRUD ====================
+  
+  async saveUserCommand(commandData) {
+    try {
+      const response = await this.apiClient.post('/user-commands', commandData);
+      return response.data;
+    } catch (error) {
+      console.error('Save user command failed:', error);
+      throw error;
+    }
+  }
+
+  async getUserCommands(includePublic = false) {
+    try {
+      const response = await this.apiClient.get('/user-commands', {
+        params: { includePublic }
+      });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Get user commands failed:', error);
+      return [];
+    }
+  }
+
+  async getUserCommandById(id) {
+    try {
+      const response = await this.apiClient.get(`/user-commands/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Get user command failed:', error);
+      throw error;
+    }
+  }
+
+  async updateUserCommand(id, updates) {
+    try {
+      const response = await this.apiClient.put(`/user-commands/${id}`, updates);
+      return response.data;
+    } catch (error) {
+      console.error('Update user command failed:', error);
+      throw error;
+    }
+  }
+
+  async deleteUserCommand(id) {
+    try {
+      const response = await this.apiClient.delete(`/user-commands/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete user command failed:', error);
+      throw error;
+    }
+  }
+
+  async executeUserCommand(commandId, selectedNodes, params = {}) {
+    try {
+      const response = await this.apiClient.post('/user-commands/execute', {
+        commandId,
+        selectedNodes,
+        params
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Execute user command failed:', error);
+      throw error;
     }
   }
 
