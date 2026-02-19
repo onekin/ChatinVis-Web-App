@@ -143,7 +143,7 @@ const Register = ({ onSwitchToLogin }) => {
         <div className="auth-header">
           <div className="auth-logo">
             <div className="auth-logo-icon">
-              <img src="/src/utils/logo.png" alt="ChatInVis" />
+              <img src="/src/utils/image.jpg" alt="ChatInVis" style={{ display: 'block' }} />
             </div>
             <span className="auth-logo-text">ChatInVis</span>
           </div>
@@ -195,7 +195,7 @@ const Register = ({ onSwitchToLogin }) => {
                 value={formData.email}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="tu@email.com"
+                placeholder="your@email.com"
               />
             </div>
             {errors.email && (

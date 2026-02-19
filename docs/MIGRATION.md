@@ -1,12 +1,12 @@
-# Guía de Migración: ChatInVis → MindInVis
+# Guía de Migración: ChatInVis Browser Extension → ChatInVis Web App
 
-Esta guía documenta cómo los componentes de la extensión ChatInVis han sido migrados a la aplicación web MindInVis.
+Esta guía documenta cómo los componentes de la extensión ChatInVis han sido migrados a la aplicación web ChatInVis.
 
 ## Mapeo de Archivos
 
 ### Core Managers
 
-| ChatInVis (Extension) | MindInVis (Web App) |
+| ChatInVis (Extension) | ChatInVis (Web App) |
 |----------------------|---------------------|
 | `app/scripts/chatinviz/MindmapManager.js` | `server/src/services/mindmap/MindmapManager.js` |
 | `app/scripts/background/LLMManagerBackground.js` | `server/src/services/llm/LLMManager.js` |
@@ -16,7 +16,7 @@ Esta guía documenta cómo los componentes de la extensión ChatInVis han sido m
 
 ### Models
 
-| ChatInVis | MindInVis |
+| ChatInVis | ChatInVis |
 |-----------|-----------|
 | `app/scripts/chatinviz/model/Problem.js` | `server/src/models/Problem.js` |
 | `app/scripts/chatinviz/model/Intervention.js` | `server/src/models/Intervention.js` |
@@ -24,7 +24,7 @@ Esta guía documenta cómo los componentes de la extensión ChatInVis han sido m
 
 ### Background Services
 
-| ChatInVis | MindInVis |
+| ChatInVis | ChatInVis |
 |-----------|-----------|
 | `app/scripts/background/LogManager.js` | `server/src/services/logging/LogManager.js` |
 | `app/scripts/background/ModelManager.js` | `server/src/services/storage/ModelManager.js` |
@@ -33,7 +33,7 @@ Esta guía documenta cómo los componentes de la extensión ChatInVis han sido m
 
 ### Utilities
 
-| ChatInVis | MindInVis |
+| ChatInVis | ChatInVis |
 |-----------|-----------|
 | `app/scripts/utils/FileUtils.js` | `server/src/utils/FileUtils.js` |
 | `app/scripts/utils/LLMTextUtils.js` | `server/src/utils/LLMTextUtils.js` |
@@ -43,7 +43,7 @@ Esta guía documenta cómo los componentes de la extensión ChatInVis han sido m
 
 ### Constants
 
-| ChatInVis | MindInVis |
+| ChatInVis | ChatInVis |
 |-----------|-----------|
 | `app/scripts/chatinviz/IconsMap.js` | `shared/constants/IconsMap.js` |
 | `app/scripts/chatinviz/PromptStyles.js` | `shared/constants/PromptStyles.js` |
@@ -52,7 +52,7 @@ Esta guía documenta cómo los componentes de la extensión ChatInVis han sido m
 
 ### MindMeister Integration
 
-| ChatInVis | MindInVis |
+| ChatInVis | ChatInVis |
 |-----------|-----------|
 | `app/scripts/mindmeister/MindmeisterClient.js` | ❌ Eliminado - Implementación propia |
 | `app/scripts/mindmeister/wrapper/*` | ❌ Eliminado - No necesario |
@@ -132,34 +132,34 @@ const node = await Mindmap.createNode({
 
 ### 1. Visualización de Mind Map
 - **ChatInVis**: Usaba el DOM de MindMeister
-- **MindInVis**: Necesita librería propia (D3.js, Vis.js, React Flow)
+- **ChatInVis**: Necesita librería propia (D3.js, Vis.js, React Flow)
 
 ### 2. Autenticación
 - **ChatInVis**: Usaba sesión de MindMeister
-- **MindInVis**: Sistema JWT propio
+- **ChatInVis**: Sistema JWT propio
 
 ### 3. Persistencia
 - **ChatInVis**: Chrome Storage + API MindMeister
-- **MindInVis**: Base de datos propia (PostgreSQL/MongoDB)
+- **ChatInVis**: Base de datos propia (PostgreSQL/MongoDB)
 
 ### 4. PDF Processing
 - **ChatInVis**: `app/resources/pdfjs/`
-- **MindInVis**: Copiar a `client/public/pdfjs/` o usar CDN
+- **ChatInVis**: Copiar a `client/public/pdfjs/` o usar CDN
 
 ## Pasos de Migración
 
 ### 1. Copiar Lógica de Negocio
 ```bash
 # Copiar managers principales
-cp app/scripts/chatinviz/MindmapManager.js MindInVis/server/src/services/mindmap/
-cp app/scripts/background/LLMManagerBackground.js MindInVis/server/src/services/llm/LLMManager.js
+cp app/scripts/chatinviz/MindmapManager.js ChatInVis/server/src/services/mindmap/
+cp app/scripts/background/LLMManagerBackground.js ChatInVis/server/src/services/llm/LLMManager.js
 
 # Copiar modelos
-cp app/scripts/chatinviz/model/*.js MindInVis/server/src/models/
+cp app/scripts/chatinviz/model/*.js ChatInVis/server/src/models/
 
 # Copiar constantes a shared
-cp app/scripts/chatinviz/IconsMap.js MindInVis/shared/constants/
-cp app/scripts/chatinviz/PromptStyles.js MindInVis/shared/constants/
+cp app/scripts/chatinviz/IconsMap.js ChatInVis/shared/constants/
+cp app/scripts/chatinviz/PromptStyles.js ChatInVis/shared/constants/
 ```
 
 ### 2. Refactorizar Dependencias de Chrome

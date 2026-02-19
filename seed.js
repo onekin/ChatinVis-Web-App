@@ -8,7 +8,7 @@ dotenv.config();
 
 const connectDB = async () => {
   try {
-    const mongodbUri = process.env.MONGODB_URI || 'mongodb+srv://rubenggbc_db_user:m0gNSmY5wzEOkg0s@mindinvis.axrbbmn.mongodb.net/mindinvis?retryWrites=true&w=majority';
+    const mongodbUri = process.env.MONGODB_URI || 'mongodb+srv://rubenggbc_db_user:m0gNSmY5wzEOkg0s@chatinvis.axrbbmn.mongodb.net/chatinvis?retryWrites=true&w=majority';
     await mongoose.connect(mongodbUri, {
       retryWrites: true,
       w: 'majority'

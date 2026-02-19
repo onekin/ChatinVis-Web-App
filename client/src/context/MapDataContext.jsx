@@ -29,14 +29,14 @@ export const MapDataProvider = ({ children }) => {
         type: config.type,
         value: config.value
       });
-      localStorage.setItem('mindinvis_framework_enabled', 'true');
-      localStorage.setItem('mindinvis_framework_type', config.type);
-      localStorage.setItem('mindinvis_framework_value', config.value);
+      localStorage.setItem('chatinvis_framework_enabled', 'true');
+      localStorage.setItem('chatinvis_framework_type', config.type);
+      localStorage.setItem('chatinvis_framework_value', config.value);
     } else {
       console.log('MapDataContext: Removing from localStorage');
-      localStorage.removeItem('mindinvis_framework_enabled');
-      localStorage.removeItem('mindinvis_framework_type');
-      localStorage.removeItem('mindinvis_framework_value');
+      localStorage.removeItem('chatinvis_framework_enabled');
+      localStorage.removeItem('chatinvis_framework_type');
+      localStorage.removeItem('chatinvis_framework_value');
     }
   };
 

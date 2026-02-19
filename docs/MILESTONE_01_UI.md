@@ -61,7 +61,7 @@ Al completar este milestone tendrás:
      - Un `<main>` con className="canvas-container"
 
 **Contenido temporal:**
-- Header: Título "MindInVis" y subtítulo
+- Header: Título "ChatInVis" y subtítulo
 - Sidebar: Un `<h2>` que diga "Controles"
 - Canvas: Un texto que diga "Aquí irá el mind map"
 

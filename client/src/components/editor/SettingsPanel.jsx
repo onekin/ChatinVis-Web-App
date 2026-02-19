@@ -25,11 +25,11 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
   useEffect(() => {
     if (!isOpen) return;
     
-    const savedNodeCount = localStorage.getItem('mindinvis_node_count') || '3';
-    const savedQuestionBg = localStorage.getItem('mindinvis_question_bg') || '#1e3a8a';
-    const savedQuestionBorder = localStorage.getItem('mindinvis_question_border') || '#3b82f6';
-    const savedAnswerBg = localStorage.getItem('mindinvis_answer_bg') || '#065f46';
-    const savedAnswerBorder = localStorage.getItem('mindinvis_answer_border') || '#10b981';
+    const savedNodeCount = localStorage.getItem('chatinvis_node_count') || '3';
+    const savedQuestionBg = localStorage.getItem('chatinvis_question_bg') || '#1e3a8a';
+    const savedQuestionBorder = localStorage.getItem('chatinvis_question_border') || '#3b82f6';
+    const savedAnswerBg = localStorage.getItem('chatinvis_answer_bg') || '#065f46';
+    const savedAnswerBorder = localStorage.getItem('chatinvis_answer_border') || '#10b981';
 
     setNodeCount(parseInt(savedNodeCount));
     setQuestionBgColor(savedQuestionBg);
@@ -50,7 +50,7 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
       setFrameworkEnabled(false);
       setFrameworkType('predefined');
       setFrameworkValue('cause-consequences');
-      const savedCustom = localStorage.getItem('mindinvis_custom_framework') || '';
+      const savedCustom = localStorage.getItem('chatinvis_custom_framework') || '';
       setCustomFramework(savedCustom);
     }
   }, [isOpen, frameworkConfig]);
@@ -62,11 +62,11 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
       return;
     }
 
-    localStorage.setItem('mindinvis_node_count', nodeCount.toString());
-    localStorage.setItem('mindinvis_question_bg', questionBgColor);
-    localStorage.setItem('mindinvis_question_border', questionBorderColor);
-    localStorage.setItem('mindinvis_answer_bg', answerBgColor);
-    localStorage.setItem('mindinvis_answer_border', answerBorderColor);
+    localStorage.setItem('chatinvis_node_count', nodeCount.toString());
+    localStorage.setItem('chatinvis_question_bg', questionBgColor);
+    localStorage.setItem('chatinvis_question_border', questionBorderColor);
+    localStorage.setItem('chatinvis_answer_bg', answerBgColor);
+    localStorage.setItem('chatinvis_answer_border', answerBorderColor);
 
     // Update framework config via context
     const newFrameworkConfig = frameworkEnabled ? {
@@ -79,7 +79,7 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
     updateFrameworkConfig(newFrameworkConfig);
 
     // Also save custom framework text separately
-    localStorage.setItem('mindinvis_custom_framework', customFramework);
+    localStorage.setItem('chatinvis_custom_framework', customFramework);
 
     // Auto-save to database if map exists
     if (mapId) {
@@ -118,12 +118,12 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
     setFrameworkValue('cause-consequences');
     setCustomFramework('');
 
-    localStorage.removeItem('mindinvis_node_count');
-    localStorage.removeItem('mindinvis_question_bg');
-    localStorage.removeItem('mindinvis_question_border');
-    localStorage.removeItem('mindinvis_answer_bg');
-    localStorage.removeItem('mindinvis_answer_border');
-    localStorage.removeItem('mindinvis_custom_framework');
+    localStorage.removeItem('chatinvis_node_count');
+    localStorage.removeItem('chatinvis_question_bg');
+    localStorage.removeItem('chatinvis_question_border');
+    localStorage.removeItem('chatinvis_answer_bg');
+    localStorage.removeItem('chatinvis_answer_border');
+    localStorage.removeItem('chatinvis_custom_framework');
 
     // Reset framework via context
     updateFrameworkConfig(null);

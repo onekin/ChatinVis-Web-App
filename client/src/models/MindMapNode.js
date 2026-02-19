@@ -46,11 +46,11 @@ class MindMapNode {
 
     // Assign colors based on type and saved configuration
     if (type === 'question') {
-      this.backgroundColor = localStorage.getItem('mindinvis_question_bg') || '#1e3a8a';
-      this.borderColor = localStorage.getItem('mindinvis_question_border') || '#3b82f6';
+      this.backgroundColor = localStorage.getItem('chatinvis_question_bg') || '#1e3a8a';
+      this.borderColor = localStorage.getItem('chatinvis_question_border') || '#3b82f6';
     } else if (type === 'answer') {
-      this.backgroundColor = localStorage.getItem('mindinvis_answer_bg') || '#065f46';
-      this.borderColor = localStorage.getItem('mindinvis_answer_border') || '#10b981';
+      this.backgroundColor = localStorage.getItem('chatinvis_answer_bg') || '#065f46';
+      this.borderColor = localStorage.getItem('chatinvis_answer_border') || '#10b981';
     } else if (type === 'root') {
       this.backgroundColor = '#581c87';
       this.borderColor = '#8b5cf6';

@@ -29,7 +29,7 @@ const Sidebar = () => {
             <Brain size={24} strokeWidth={2.5} />
           </div>
         </div>
-        <h2 className="sidebar-title">MindInVis</h2>
+        <h2 className="sidebar-title">ChatInVis</h2>
       </div>
 
       <nav className="sidebar-nav">

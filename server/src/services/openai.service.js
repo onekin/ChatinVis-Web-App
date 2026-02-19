@@ -344,7 +344,7 @@ class OpenAIService {
             node.source = `PDF - Page ${mostRelevantChunk.pageNumber}`;
 
             // Agregar la cita al final de la descripción
-            const citation = `\n\nsource ${mostRelevantChunk.pageNumber}\n"${mostRelevantChunk.text.substring(0, 150)}..."`;
+            const citation = `\n\nsource ${mostRelevantChunk.pageNumber}\n"${mostRelevantChunk.text.substring(0, 500)}..."`;
             node.description = node.description ? node.description + citation : citation;
 
             console.log(`  Added citation from page ${mostRelevantChunk.pageNumber} to description`);

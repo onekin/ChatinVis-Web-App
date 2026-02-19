@@ -1,8 +1,8 @@
-# Arquitectura de MindInVis
+# Arquitectura de ChatInVis
 
 ## Visión General
 
-MindInVis es una aplicación web full-stack para crear mind maps interactivos con integración de LLM. El usuario puede hacer preguntas, y el sistema genera respuestas estructuradas que se visualizan como nodos en el mind map.
+ChatInVis es una aplicación web full-stack para crear mind maps interactivos con integración de LLM. El usuario puede hacer preguntas, y el sistema genera respuestas estructuradas que se visualizan como nodos en el mind map.
 
 ## Stack Tecnológico
 

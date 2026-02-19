@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const connectDB = async () => {
   try {
-    const mongodbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/mindinvis';
+    const mongodbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/chatinvis';
     
     await mongoose.connect(mongodbUri, {
       retryWrites: true,

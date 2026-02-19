@@ -153,18 +153,16 @@ const Toolbar = ({
         </button>
       </div>
       <div className="toolbar-group">
-        <span className="toolbar-group-label">Commands</span>
         <button
           className="toolbar-btn"
           onClick={onShowUserCommands}
           title="User-defined commands"
         >
           <Terminal size={18} />
-          <span>My Commands</span>
+          <span>User Commands</span>
         </button>
       </div>
       <div className="toolbar-group">
-        <span className="toolbar-group-label">Logs</span>
         <button
           className="toolbar-btn"
           onClick={onShowLogs}

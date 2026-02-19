@@ -1034,7 +1034,7 @@ const Editor = () => {
 
         // Call real API with node type and optional context
         // Send PARENT TYPE (not child) so server knows whether to use context
-        const nodeCount = parseInt(localStorage.getItem('mindinvis_node_count') || '3');
+        const nodeCount = parseInt(localStorage.getItem('chatinvis_node_count') || '3');
         console.log('Editor: Generating nodes from edit with frameworkConfig:', frameworkConfigRef.current);
         const responses = await iaService.generateNodes(
           editingText,

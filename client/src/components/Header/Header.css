@@ -1,11 +1,6 @@
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 32px;
-  background: var(--background);
-  border-bottom: 1px solid var(--border);
-  gap: 24px;
+  padding: 0;
+  border-bottom: none;
 }
 
 .header-search {
@@ -102,7 +97,10 @@
 }
 
 .user-menu {
-  position: relative;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 999999;
 }
 
 .user-menu-trigger {
@@ -152,7 +150,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  z-index: 1000;
+  z-index: 999999;
   animation: dropdownSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -1,4 +1,4 @@
-# MindInVis - Shared
+# ChatInVis - Shared
 
 Código compartido entre el cliente y el servidor.
 
@@ -62,7 +62,7 @@ import { formatLLMResponse } from '../shared/utils/formatting.js'
 
 ```json
 {
-  "name": "mindinvis-shared",
+  "name": "chatinvis-shared",
   "version": "1.0.0",
   "type": "module",
   "exports": {

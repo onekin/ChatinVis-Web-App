@@ -310,6 +310,9 @@ export const executeUserCommand = async (req, res, next) => {
         console.log('Scope:', command.scope);
         console.log('Nodes:', selectedNodes.length);
         console.log('Final Prompt (first 200 chars):', finalPrompt.substring(0, 200));
+        console.log('\n--- FULL PROMPT ---');
+        console.log(finalPrompt);
+        console.log('\n--- END PROMPT ---\n');
 
         // Llamar directamente a OpenAI usando LangChain
         const messages = [

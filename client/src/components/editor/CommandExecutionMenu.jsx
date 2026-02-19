@@ -72,7 +72,7 @@ const CommandExecutionMenu = ({
 
     try {
       setIsExecuting(true);
-      toast.loading(`Executing ${selectedCommand.name}...`, { id: 'execute-command' });
+      toast.loading(`Running ${selectedCommand.name}...`, { id: 'execute-command' });
 
       // Formatear nodos para el backend
       const formattedNodes = selectedNodes.map(n => ({
@@ -82,12 +82,13 @@ const CommandExecutionMenu = ({
         id: n.id
       }));
 
+
       const result = await iaService.executeUserCommand(
         selectedCommand._id,
         formattedNodes
       );
       
-      toast.success(`Command executed successfully!`, { id: 'execute-command' });
+      toast.success(`Command runned successfully!`, { id: 'execute-command' });
       
       if (onExecute) {
         onExecute(result, selectedCommand);
@@ -96,7 +97,7 @@ const CommandExecutionMenu = ({
       onClose();
     } catch (error) {
       console.error('Command execution failed:', error);
-      toast.error(error.response?.data?.error || 'Failed to execute command', { 
+      toast.error(error.response?.data?.error || 'Failed to run command', {
         id: 'execute-command' 
       });
     } finally {
@@ -194,7 +195,7 @@ const CommandExecutionMenu = ({
           onClick={handleExecute} 
           disabled={!selectedCommand || isExecuting}
         >
-          {isExecuting ? 'Executing...' : 'Execute'}
+          {isExecuting ? 'Running...' : 'Run'}
         </button>
       </div>
     </div>

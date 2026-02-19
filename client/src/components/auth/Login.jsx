@@ -83,9 +83,9 @@ const Login = ({ onSwitchToRegister }) => {
         <div className="auth-header">
           <div className="auth-logo">
             <div className="auth-logo-icon">
-              <img src="/src/utils/logo.png" alt="MindInVis" />
+              <img src="/src/utils/image.jpg" alt="ChatInVis" style={{ display: 'block' }} />
             </div>
-            <span className="auth-logo-text">MindInVis</span>
+            <span className="auth-logo-text">ChatInVis</span>
           </div>
           <h1 className="auth-title">Welcome back</h1>
           <p className="auth-subtitle">Sign in to continue with your mind maps</p>
@@ -112,7 +112,7 @@ const Login = ({ onSwitchToRegister }) => {
                 value={formData.email}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="tu@email.com"
+                placeholder="your@email.com"
               />
             </div>
             {errors.email && (

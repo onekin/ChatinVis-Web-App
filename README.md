@@ -130,6 +130,128 @@ npm run dev:server
 | `npm run build` | Production build |
 | `npm run lint` | Project linting |
 
+## User Manual
+
+### Getting Started
+
+#### 1. Register an Account
+- Navigate to the application homepage
+- Click on "Register" 
+- Enter your username, email, and password
+- Submit the registration form
+
+#### 2. Login
+- Enter your credentials on the login page
+- You'll be redirected to your dashboard
+
+### Creating Your First Mind Map
+
+#### Starting a New Map
+1. From the dashboard, click "Create Map"
+2. Enter a title for your map
+3. Optionally select a document (PDF) as context
+
+#### Working with Nodes
+
+**Adding the First Node:**
+- Type your question or topic in the input field
+- The AI will generate a response and create the first node
+
+**Expanding Nodes:**
+- Click on any node to select it
+- Type a follow-up question in the input field
+- A new child node will be created connected to the selected parent
+
+**Node Interactions:**
+- **Drag & Drop:** Move nodes around to organize your map
+- **Zoom:** Use mouse wheel to zoom in/out
+- **Pan:** Click and drag the background to move the viewport
+- **Delete:** Click the trash icon on a node to remove it
+
+#### Using the Feedback System
+
+If you're not satisfied with an AI response:
+1. Select the node you want to improve
+2. Click the "Feedback" button
+3. Enter your refinement instructions
+4. The AI will regenerate the node content based on your feedback
+
+### PDF Document Analysis
+
+#### Uploading Documents
+1. Go to the "Documents" section
+2. Click "Upload PDF"
+3. Select your file (max size depends on server configuration)
+4. Wait for the processing confirmation
+
+#### Using Documents with Maps
+- When creating a new map, select a previously uploaded document
+- The AI will use the document content as context when generating responses
+- Ask questions about the document content to extract specific information
+
+### Navigation & Interface
+
+#### Sidebar Menu
+- **Home:** Return to dashboard
+- **My Maps:** View all your saved mind maps
+- **Documents:** Manage uploaded PDFs
+- **Settings:** Configure LLM preferences and API keys
+- **Logout:** End your session
+
+#### Editor Controls
+- **Save:** Automatically saves changes (also manual save button available)
+- **Undo/Redo:** Navigate through your editing history
+- **Export:** Download your mind map as JSON or image
+- **Logs:** View exploration history for the current map
+
+### Exploration Logs
+
+Access the complete history of your interactions:
+1. Open any mind map
+2. Click the "Logs" button
+3. View timestamped records of:
+   - Questions asked
+   - AI responses generated
+   - Feedback provided
+   - Node modifications
+
+### Advanced Features
+
+#### Multi-LLM Support
+- Switch between OpenAI and Google Gemini
+- Configure API keys in Settings
+- Each map remembers its LLM preference
+
+#### Node Customization
+- Edit node titles and content manually
+- Color-code nodes for organization
+- Add notes and metadata
+
+### Tips & Best Practices
+
+- **Start broad, then narrow:** Begin with general questions, then dive deeper
+- **Use feedback effectively:** Be specific about what you want changed
+- **Organize as you go:** Arrange nodes logically to maintain clarity
+- **Save regularly:** Although auto-save is enabled, manual saves ensure data safety
+- **Use documents:** Upload relevant PDFs to get more accurate, context-aware responses
+
+### Troubleshooting
+
+**Map not loading?**
+- Check your internet connection
+- Refresh the page
+- Verify you're logged in
+
+**AI not responding?**
+- Ensure API keys are configured correctly in Settings
+- Check that your selected LLM provider is available
+- Review server logs for errors
+
+**PDF upload failing?**
+- Verify file is a valid PDF
+- Check file size limits
+- Ensure PDF is not password-protected
+
 ## API Endpoints
 
 ### Authentication

@@ -1,6 +1,6 @@
-# MindInVis - Servidor
+# ChatInVis - Servidor
 
-Backend de MindInVis construido con Node.js, Express y LangChain.
+Backend de ChatInVis construido con Node.js, Express y LangChain.
 
 ## Estructura
 
@@ -112,7 +112,7 @@ NODE_ENV=development
 PORT=5000
 
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/mindinvis
+DATABASE_URL=postgresql://user:password@localhost:5432/chatinvis
 
 # JWT
 JWT_SECRET=your-secret-key

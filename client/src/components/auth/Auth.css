@@ -80,12 +80,12 @@
 }
 
 .auth-logo-icon {
-  width: 50px;
-  height: 50px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+  background: transparent;
   border-radius: 14px;
   font-size: 24px;
   font-weight: 700;
@@ -94,9 +94,10 @@
 }
 
 .auth-logo-icon img {
-  width: 35px;
-  height: 35px;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
 }
 
 .auth-logo-text {
