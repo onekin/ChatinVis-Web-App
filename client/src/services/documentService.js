@@ -3,7 +3,7 @@ import axios from 'axios';
 class DocumentService {
   constructor() {
     this.apiClient = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
       timeout: 120000
     });
 

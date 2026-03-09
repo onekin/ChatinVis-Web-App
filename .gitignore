@@ -62,3 +62,7 @@ Thumbs.db
 
 # Docker
 .docker/
+
+# Uploads (user files should not be committed)
+server/uploads/*
+!server/uploads/.gitkeep
