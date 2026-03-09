@@ -1,0 +1,60 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: chatinvis-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - chatinvis-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: chatinvis-server
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/src:/app/src
+      - ./server/uploads:/app/uploads
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/chatinvis
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - chatinvis-net
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: chatinvis-client
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client/src:/app/src
+      - ./client/index.html:/app/index.html
+      - ./client/vite.config.js:/app/vite.config.js
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    depends_on:
+      - server
+    networks:
+      - chatinvis-net
+
+volumes:
+  mongo_data:
+
+networks:
+  chatinvis-net:
+    driver: bridge
