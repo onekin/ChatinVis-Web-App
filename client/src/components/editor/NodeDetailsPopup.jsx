@@ -20,27 +20,27 @@ const NodeDetailsPopup = ({ node, nodeRef, onClose }) => {
   useEffect(() => {
     updatePosition();
 
-    // Update position on scroll, resize, or any transformation
     const handleUpdate = () => {
       updatePosition();
     };
 
-    // Listen to various events that might change node position
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
 
-    // Use requestAnimationFrame for smooth updates during pan/zoom
-    let rafId;
-    const rafUpdate = () => {
-      handleUpdate();
-      rafId = requestAnimationFrame(rafUpdate);
-    };
-    rafId = requestAnimationFrame(rafUpdate);
+    // Use MutationObserver to track transform changes (pan/zoom) instead of rAF loop
+    let observer;
+    if (nodeRef && nodeRef.current) {
+      const canvas = nodeRef.current.closest('.react-flow__viewport') || nodeRef.current.parentElement;
+      if (canvas) {
+        observer = new MutationObserver(handleUpdate);
+        observer.observe(canvas, { attributes: true, attributeFilter: ['style', 'transform'] });
+      }
+    }
 
     return () => {
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
-      if (rafId) cancelAnimationFrame(rafId);
+      if (observer) observer.disconnect();
     };
   }, [nodeRef]);
 
