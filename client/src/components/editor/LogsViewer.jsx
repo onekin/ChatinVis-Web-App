@@ -130,13 +130,17 @@ function LogsViewer({ mapId, onClose }) {
     loadLogs(true);
   }, [filters.action, filters.nodeId]);
 
-  const loadLogs = async (reset = false) => {
+  const loadLogs = async (reset = false, skipOverride = null) => {
     try {
       console.log('loadLogs called, reset:', reset, 'filters:', filters);
       setLoading(true);
       setError(null);
 
-      const currentFilters = reset ? { ...filters, skip: 0 } : filters;
+      const currentFilters = reset
+        ? { ...filters, skip: 0 }
+        : skipOverride !== null
+          ? { ...filters, skip: skipOverride }
+          : filters;
 
       const response = await nodeLogService.getLogsByMapId(mapId, currentFilters);
       console.log('loadLogs response:', response);
@@ -176,11 +180,12 @@ function LogsViewer({ mapId, onClose }) {
   };
 
   const handleLoadMore = () => {
+    const newSkip = filters.skip + filters.limit;
     setFilters(prev => ({
       ...prev,
-      skip: prev.skip + prev.limit
+      skip: newSkip
     }));
-    loadLogs();
+    loadLogs(false, newSkip);
   };
 
   const handleExport = async () => {
