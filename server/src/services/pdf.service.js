@@ -124,36 +124,47 @@ class PDFService {
       this.initialize();
       console.log(`[PDF Service] Buscando chunks para: "${query}"`);
 
+      // Paso 1: traer solo chunkId + embedding para calcular similitudes sin cargar texto
       const queryEmbedding = await this.embeddings.embedQuery(query);
 
-      const document = await Document.findById(documentId);
-      if (!document) {
+      const docMeta = await Document.findById(documentId, { status: 1, 'chunks.chunkId': 1, 'chunks.embedding': 1 });
+      if (!docMeta) {
         throw new Error('Document not found');
       }
 
-      if (document.status !== 'completed') {
-        throw new Error(`Document is not ready. Current status: ${document.status}`);
+      if (docMeta.status !== 'completed') {
+        throw new Error(`Document is not ready. Current status: ${docMeta.status}`);
       }
 
-      const similarities = document.chunks.map(chunk => {
-        const similarity = this.cosineSimilarity(queryEmbedding, chunk.embedding);
-        return {
-          ...chunk.toObject(),
-          similarity,
-          embedding: undefined
-        };
-      });
+      // Calcular similitudes solo con los embeddings (sin texto en memoria)
+      const scored = docMeta.chunks.map(chunk => ({
+        chunkId: chunk.chunkId,
+        similarity: this.cosineSimilarity(queryEmbedding, chunk.embedding)
+      }));
 
-      const topResults = similarities
+      const topIds = scored
         .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, topK);
+        .slice(0, topK)
+        .map(c => c.chunkId);
 
-      console.log(`[PDF Service] Encontrados ${topResults.length} chunks relevantes:`);
-      topResults.forEach((result, i) => {
+      const similarityMap = Object.fromEntries(scored.map(c => [c.chunkId, c.similarity]));
+
+      // Paso 2: traer solo los chunks ganadores con su texto (sin embeddings)
+      const docData = await Document.findById(documentId).select({
+        'chunks.embedding': 0
+      }).lean();
+
+      const topChunks = docData.chunks
+        .filter(c => topIds.includes(c.chunkId))
+        .map(c => ({ ...c, similarity: similarityMap[c.chunkId] }))
+        .sort((a, b) => b.similarity - a.similarity);
+
+      console.log(`[PDF Service] Encontrados ${topChunks.length} chunks relevantes:`);
+      topChunks.forEach((result, i) => {
         console.log(`   ${i + 1}. Similitud: ${result.similarity.toFixed(3)} | Page ${result.pageNumber} | ${result.stats.wordCount} palabras`);
       });
 
-      return topResults;
+      return topChunks;
 
     } catch (error) {
       console.error('[PDF Service] Error buscando chunks:', error.message);

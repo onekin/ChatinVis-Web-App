@@ -50,8 +50,9 @@ const documentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Índice para búsqueda vectorial
-documentSchema.index({ 'chunks.embedding': '2dsphere' });
+// Índices para queries frecuentes
+documentSchema.index({ status: 1 });
+documentSchema.index({ mindMapId: 1, status: 1 });
 
 const Document = mongoose.model('Document', documentSchema);
 

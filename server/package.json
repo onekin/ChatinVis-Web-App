@@ -4,6 +4,7 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
+    "build": "echo 'Server is plain JS, no build needed'",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "lint": "eslint .",

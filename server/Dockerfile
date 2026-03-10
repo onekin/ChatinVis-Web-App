@@ -3,10 +3,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copiar solo manifests primero (cache de layers)
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # Instalar dependencias (incluyendo nodemon en devDeps)
-RUN npm ci
+RUN npm install
 
 # El codigo fuente se monta como volumen en dev,
 # no se copia aqui — permite hot reload

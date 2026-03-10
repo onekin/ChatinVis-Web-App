@@ -14,7 +14,7 @@ ChatInVis is a full-stack web application for creating interactive mind maps wit
 ### Key Features
 
 - **Interactive visualization** with ReactFlow (zoom, pan, drag & drop)
-- **Multi-LLM integration** (OpenAI GPT-4, Google Gemini)
+- **LLM integration** (OpenAI GPT-4)
 - **PDF analysis** - Extract information from documents
 - **Feedback system** - Refine LLM responses
 - **Exploration logs** - Complete interaction audit trail
@@ -53,17 +53,77 @@ ChatinVis-Web-App/
 | **Frontend** | React 18, Vite, ReactFlow, Zustand, TanStack Query, Framer Motion, Axios |
 | **Backend** | Node.js, Express, LangChain, Mongoose, JWT, Winston, Helmet            |
 | **Database** | MongoDB                                                                |
-| **LLM Providers** | OpenAI (GPT-4)<br/>                                                         |
+| **LLM Providers** | OpenAI (GPT-4) |
+| **Infrastructure** | Docker, Docker Compose |
 
 ## Installation
 
-### Prerequisites
+### Option A: Docker (recommended)
+
+#### Prerequisites
+
+- Docker and Docker Compose
+
+#### Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ChatinVis-Web-App
+   ```
+
+2. **Configure environment variables**
+
+   Create `.env` in the root:
+   ```env
+   # LLM API Keys
+   OPENAI_API_KEY=sk-...
+
+   # Security
+   JWT_SECRET=your-secret-key-here
+   JWT_EXPIRE=7d
+
+   # Database (automatically set by docker-compose)
+   MONGODB_URI=mongodb://mongo:27017/chatinvis
+
+   # Server
+   NODE_ENV=development
+   PORT=3001
+
+   # CORS
+   CORS_ORIGIN=http://localhost:3000
+
+   # Logging
+   LOG_LEVEL=debug
+   ```
+
+3. **Start all services**
+   ```bash
+   docker compose up
+   ```
+
+   This starts three containers:
+   - `chatinvis-mongo` — MongoDB 7 on port 27017
+   - `chatinvis-server` — Node.js backend on port 3001 (with hot reload)
+   - `chatinvis-client` — React frontend on port 3000 (with hot reload)
+
+   Source code is mounted as volumes, so changes are reflected immediately without rebuilding.
+
+4. **Open the app**
+
+   Navigate to `http://localhost:3000`
+
+---
+
+### Option B: Local (manual)
+
+#### Prerequisites
 
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 - MongoDB (local or remote)
 
-### Steps
+#### Steps
 
 1. **Clone the repository**
    ```bash
@@ -80,33 +140,21 @@ ChatinVis-Web-App/
 
    Create `.env` in the root:
    ```env
-   # LLM API Keys (at least one required)
    OPENAI_API_KEY=sk-...
-   GOOGLE_API_KEY=...
-
-   # Security
    JWT_SECRET=your-secret-key-here
    JWT_EXPIRE=7d
-
-   # Database
-   MONGODB_URI=mongodb://localhost:27017/mindinvis
-
-   # Server
+   MONGODB_URI=mongodb://localhost:27017/chatinvis
    NODE_ENV=development
    PORT=3001
-   
-   # CORS
    CORS_ORIGIN=http://localhost:3000
-
-   # Logging
    LOG_LEVEL=debug
    ```
    Create `.env` in `client/`:
    ```env
-   VITE_API_URL=http://localhost:5000
+   VITE_API_URL=http://localhost:3001
    ```
 
-5. **Initialize database**
+4. **Initialize database**
    ```bash
    node seed.js
    ```
@@ -114,18 +162,23 @@ ChatinVis-Web-App/
 ## Development
 
 ```bash
-# Start frontend and backend simultaneously
+# Docker (all services with hot reload)
+docker compose up
+
+# Or locally, start frontend and backend simultaneously
 npm run dev
 
 # Or separately:
-npm run dev:client    
-npm run dev:server    
+npm run dev:client
+npm run dev:server
 ```
 
 ### Available Commands
 
 | Command | Description |
 |---------|-------------|
+| `docker compose up` | Start all services via Docker |
+| `docker compose up --build` | Rebuild images and start |
 | `npm run dev` | Development (client + server) |
 | `npm run build` | Production build |
 | `npm run lint` | Project linting |
@@ -217,9 +270,8 @@ Access the complete history of your interactions:
 
 ### Advanced Features
 
-#### Multi-LLM Support
-- Switch between OpenAI and Google Gemini
-- Configure API keys in Settings
+#### LLM Configuration
+- Configure your OpenAI API key in Settings
 - Each map remembers its LLM preference
 
 #### Node Customization
@@ -243,8 +295,7 @@ Access the complete history of your interactions:
 - Verify you're logged in
 
 **AI not responding?**
-- Ensure API keys are configured correctly in Settings
-- Check that your selected LLM provider is available
+- Ensure your OpenAI API key is configured correctly in Settings
 - Review server logs for errors
 
 **PDF upload failing?**

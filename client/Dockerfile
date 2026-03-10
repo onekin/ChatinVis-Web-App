@@ -3,10 +3,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copiar solo manifests primero
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # Instalar dependencias
-RUN npm ci
+RUN npm install
 
 # El codigo fuente se monta como volumen
 EXPOSE 3000
