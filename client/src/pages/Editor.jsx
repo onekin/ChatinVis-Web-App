@@ -859,7 +859,7 @@ const Editor = () => {
       console.log(' Generating nodes for:', parentNode.text);
       toast.loading('🤖 Generating nodes with AI...', { id: 'generate', duration: Infinity });
 
-      const nodeCount = parseInt(localStorage.getItem('mindinvis_node_count') || '3');
+      const nodeCount = parseInt(localStorage.getItem('chatinvis_node_count') || '3');
       const nodeContext = nodePath && parentNode && nodePath.length > 1
         ? {
             pathLength: nodePath.length,
@@ -1332,7 +1332,6 @@ const Editor = () => {
           }}
         />
       )}
-      {console.log(' Editor render - isLogsOpen:', isLogsOpen, 'mapId:', mapId)}
 
       {/* Node Detail Panel */}
       {isDetailPanelOpen && selectedNode && (

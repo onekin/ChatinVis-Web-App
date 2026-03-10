@@ -9,13 +9,13 @@ export const MapDataProvider = ({ children }) => {
 
   // Framework state management
   const [frameworkConfig, setFrameworkConfig] = useState(() => {
-    const enabled = localStorage.getItem('mindinvis_framework_enabled') === 'true';
+    const enabled = localStorage.getItem('chatinvis_framework_enabled') === 'true';
     if (!enabled) {
       return null;
     }
-    
-    const type = localStorage.getItem('mindinvis_framework_type') || 'predefined';
-    const value = localStorage.getItem('mindinvis_framework_value') || 'cause-consequences';
+
+    const type = localStorage.getItem('chatinvis_framework_type') || 'predefined';
+    const value = localStorage.getItem('chatinvis_framework_value') || 'cause-consequences';
     
     return { enabled: true, type, value };
   });
