@@ -337,8 +337,8 @@ class GeminiServiceProxy {
     return this.serviceInstance;
   }
 
-  generateNodes(nodeText, nodeTipo, count, useStructured, description) {
-    return this.getInstance().generateNodes(nodeText, nodeTipo, count, useStructured, description);
+  generateNodes(nodeText, nodeTipo, count, nodeContextData) {
+    return this.getInstance().generateNodes(nodeText, nodeTipo, count, nodeContextData);
   }
 
   generateStructuredNodes(nodeContext, question, type, options) {
