@@ -72,10 +72,14 @@ export const downloadPDF = async (req, res) => {
 
     fileStream.on('error', (error) => {
       console.error('Error streaming file:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to stream PDF file'
-      });
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to stream PDF file'
+        });
+      } else {
+        res.destroy();
+      }
     });
 
   } catch (error) {

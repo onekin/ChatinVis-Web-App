@@ -1,9 +1,12 @@
-const PDFParse = require('pdf-parse');
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import { createRequire } from 'module';
 
-async function parsePDF(filePath) {
+const require = createRequire(import.meta.url);
+const PDFParse = require('pdf-parse');
+
+export async function parsePDF(filePath) {
     if (!filePath) {
+        throw new Error('filePath is required');
     }
     try {
         const dataBuffer = fs.readFileSync(filePath);
@@ -17,5 +20,3 @@ async function parsePDF(filePath) {
         throw error;
     }
 }
-
-module.exports = { parsePDF };

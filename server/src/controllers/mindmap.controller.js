@@ -170,6 +170,9 @@ export const updateMindMap = async (req, res) => {
       user: userId,
       timestamp: new Date()
     });
+    if (mindMap.metadata.editHistory.length > 100) {
+      mindMap.metadata.editHistory = mindMap.metadata.editHistory.slice(-100);
+    }
     mindMap.metadata.lastEditedBy = userId;
 
     await mindMap.save();
@@ -334,6 +337,9 @@ export const saveMindMapState = async (req, res) => {
       user: userId,
       timestamp: new Date()
     });
+    if (mindMap.metadata.editHistory.length > 100) {
+      mindMap.metadata.editHistory = mindMap.metadata.editHistory.slice(-100);
+    }
     mindMap.metadata.lastEditedBy = userId;
 
     await mindMap.save();

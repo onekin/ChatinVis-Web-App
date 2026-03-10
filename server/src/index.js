@@ -81,20 +81,19 @@ app.use((req, res) => {
 // Global error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-const server = app.listen(PORT, async () => {
+// Connect to MongoDB first, then start server
+try {
+  await connectDB();
+} catch (error) {
+  console.error('Failed to connect to MongoDB:', error);
+  process.exit(1);
+}
+
+const server = app.listen(PORT, () => {
   console.log(`\nServer running on port ${PORT}`);
-  console.log(`CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+  console.log(`CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
   console.log(`OpenAI API configured: ${process.env.OPENAI_API_KEY ? 'configured' : 'not configured'}`);
   console.log(`Health check: http://localhost:${PORT}/health\n`);
-  
-  // Connect to MongoDB
-  try {
-    await connectDB();
-  } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
-    process.exit(1);
-  }
 });
 
 // Graceful shutdown
