@@ -207,6 +207,48 @@ class NodeLogController {
     }
   }
 
+  // Get logs filtered for question suggestion
+  async getLogsForQuestions(req, res) {
+    try {
+      const { mapId } = req.params;
+
+      if (!mapId || mapId === 'undefined') {
+        return res.status(400).json({ error: 'Invalid or missing mapId' });
+      }
+
+      let objectId;
+      try {
+        objectId = new mongoose.Types.ObjectId(mapId);
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid mapId format' });
+      }
+
+      const questionActions = [
+        'askFirstQuestion', 'askQuestion', 'selectAnswer',
+        'askFirstQuestionWithPDF', 'askQuestionWithPDF'
+      ];
+      const feedbackActions = ['editFeedback', 'newFeedback'];
+
+      const questionLogs = await NodeLog.find({
+        mapId: objectId,
+        action: { $in: questionActions }
+      }).sort({ timestamp: -1 }).lean();
+
+      const nodeIds = [...new Set(questionLogs.map(l => l.nodeId))];
+
+      const feedbackLogs = await NodeLog.find({
+        mapId: objectId,
+        action: { $in: feedbackActions },
+        nodeId: { $in: nodeIds }
+      }).lean();
+
+      res.json({ questionLogs, feedbackLogs });
+    } catch (error) {
+      console.error('Error fetching logs for questions:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   // Crear logs de prueba para testing
   async createTestLogs(req, res) {
     try {
