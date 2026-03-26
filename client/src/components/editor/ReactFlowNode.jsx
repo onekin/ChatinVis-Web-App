@@ -47,7 +47,7 @@ function calculateFontSize(text, width, height) {
 }
 
 const ReactFlowNode = ({ data }) => {
-  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, showDetailsPopup, onToggleDetailsPopup } = data;
+  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, onGenerateWithFramework, onGenerateAll, showDetailsPopup, onToggleDetailsPopup } = data;
   const [showSummarizePopup, setShowSummarizePopup] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   const [showChildOptions, setShowChildOptions] = useState(false);
@@ -224,6 +224,8 @@ const ReactFlowNode = ({ data }) => {
     return node.borderColor || getDefaultBorderColor(node.type);
   };
 
+  console.log('[DEBUG] node borderStyle:', node.id, node.borderStyle);
+
   const nodeStyle = {
     width: `${width}px`,
     height: `${height}px`,
@@ -231,17 +233,22 @@ const ReactFlowNode = ({ data }) => {
     backgroundColor: node.backgroundColor || getDefaultBackgroundColor(node.type),
     borderColor: determineBorderColor(),
     borderWidth: `${node.borderWidth || 2}px`,
+    borderStyle: node.generatedWithFramework ? 'dashed' : (node.borderStyle || 'solid'),
+    borderRadius: node.addedManually ? '0px' : undefined,
   };
+
+  const isFromLogs = node.source === 'SystemLog';
 
   return (
     <>
     <div
       ref={nodeRef}
-      className={`mindmap-node ${selected ? 'selected' : ''} node-type-${node.type}`}
+      className={`mindmap-node ${selected ? 'selected' : ''} node-type-${node.type}${node.generatedWithFramework ? ' node-framework' : ''}${isFromLogs ? ' node-from-logs' : ''}`}
       style={nodeStyle}
       onDoubleClick={(e) => onNodeDoubleClick(e, node)}
       onClick={(e) => onNodeClick(e, node)}
     >
+      {isFromLogs && <span className="node-from-logs-label">From Logs</span>}
       <Handle type="target" position={Position.Left} />
       {!isEditing && (
         <button
@@ -280,7 +287,7 @@ const ReactFlowNode = ({ data }) => {
             disabled={isLoading}
             title="Generate with AI"
           >
-            {isLoading ? '⏳ Generating...' : '✨ Generate'}
+            {isLoading ? ' Generating...' : ' Generate'}
           </button>
           {isLoading && (
             <div className="node-loading">
@@ -389,15 +396,31 @@ const ReactFlowNode = ({ data }) => {
                 className="child-option-btn ai-option"
                 onClick={handleAIChildClick}
               >
-                <span className="option-icon">✨</span>
                 <span className="option-text">Generate with AI</span>
               </button>
               <button
                 className="child-option-btn manual-option"
                 onClick={handleManualChildClick}
               >
-                <span className="option-icon">➕</span>
                 <span className="option-text">Add manually</span>
+              </button>
+              <button
+                className="child-option-btn generate-framework-option"
+                onClick={() => {
+                  setShowChildOptions(false);
+                  if (onGenerateWithFramework) onGenerateWithFramework(node);
+                }}
+              >
+                <span className="option-text">Generate with framework</span>
+              </button>
+              <button
+                className="child-option-btn generate-all-option"
+                onClick={() => {
+                  setShowChildOptions(false);
+                  if (onGenerateAll) onGenerateAll(node);
+                }}
+              >
+                <span className="option-text">Generate All</span>
               </button>
             </div>
           </div>
