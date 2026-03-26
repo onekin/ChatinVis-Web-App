@@ -21,7 +21,7 @@ class IAService {
   }
 
 
-  async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null, frameworkConfig = null) {
+  async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null, frameworkConfig = null, mapId = null) {
     try {
       // Map English types to Spanish for API compatibility
       const typeMap = {
@@ -37,21 +37,32 @@ class IAService {
         count,
         nodeContext,
         documentId,
-        frameworkConfig
+        frameworkConfig,
+        mapId
       });
 
       if (response.data.success && response.data.nodes) {
-        // Devolver objetos completos con texto, descripción, source y citation
-        return response.data.nodes.map(node => ({
+        const nodes = response.data.nodes.map(node => ({
           text: node.text,
           description: node.description || '',
           source: node.source || 'Generado por IA',
           citation: node.citation || null
         }));
+
+        const logNodes = (response.data.logNodes || []).map(node => ({
+          text: node.text,
+          description: node.description || '',
+          source: node.source || 'SystemLog',
+          citation: null
+        }));
+
+        const crossValidation = response.data.crossValidation || { matches: [] };
+
+        return { nodes, logNodes, crossValidation };
       }
 
       console.warn('Unexpected API response, using mock data');
-      return this.getMockResponses(nodeText);
+      return { nodes: this.getMockResponses(nodeText), logNodes: [], crossValidation: { matches: [] } };
     } catch (error) {
       console.error('IA generation failed:', error);
 
@@ -61,7 +72,7 @@ class IAService {
         console.warn('Cannot connect to server, using mock responses');
       }
 
-      return this.getMockResponses(nodeText);
+      return { nodes: this.getMockResponses(nodeText), logNodes: [], crossValidation: { matches: [] } };
     }
   }
 
