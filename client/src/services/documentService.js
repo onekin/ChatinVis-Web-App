@@ -21,11 +21,12 @@ class DocumentService {
     );
   }
 
-  async uploadPDF(file, mindMapId, onUploadProgress = null) {
+  async uploadPDF(file, mindMapId, pdfMode = 'rag', onUploadProgress = null) {
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('mindMapId', mindMapId);
+      formData.append('pdfMode', pdfMode);
 
       const config = {};
 

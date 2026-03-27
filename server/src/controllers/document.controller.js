@@ -84,10 +84,12 @@ export const downloadPDF = async (req, res) => {
 
   } catch (error) {
     console.error('Error downloading PDF:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to download PDF'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to download PDF'
+      });
+    }
   }
 };
 

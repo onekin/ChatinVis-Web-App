@@ -54,7 +54,8 @@ const treeToFlow = (
   detailsPopupNodeId,
   onToggleDetailsPopup,
   onGenerateWithFramework,
-  onGenerateAll
+  onGenerateAll,
+  onNotesChange
 ) => {
   const nodes = [];
   const edges = [];
@@ -87,6 +88,7 @@ const treeToFlow = (
         onPDFUploaded,
         showDetailsPopup: detailsPopupNodeId === node.id,
         onToggleDetailsPopup,
+        onNotesChange,
       },
     });
 
@@ -619,6 +621,11 @@ const Editor = () => {
     dispatch(actionCreators.updateNodeFeedback(node.id, feedback));
   }, [dispatch, mapId]);
 
+  const handleNotesChange = useCallback((node, notes) => {
+    if (!node || !node.id) return;
+    dispatch(actionCreators.updateNodeProperty(node.id, 'notes', notes));
+  }, [dispatch]);
+
   const handleCanvasClick = useCallback(() => {
     setEditingNodeId(null);
     setSelectedNodeId(null);
@@ -994,7 +1001,7 @@ const Editor = () => {
           }
         : null;
 
-      const responses = await iaService.generateNodes(
+      const result = await iaService.generateNodes(
         parentNode.text,
         parentNode.type,
         nodeCount,
@@ -1002,6 +1009,7 @@ const Editor = () => {
         documentId,
         effectiveFramework
       );
+      const responses = result.nodes || result;
 
       const positions = calculateChildrenPositions(parentNode, responses.length, state.tree);
       const pathLength = nodePath?.length || 0;
@@ -1036,6 +1044,7 @@ const Editor = () => {
         }
 
         childNode.generatedWithFramework = true;
+        childNode.frameworkName = effectiveFramework?.value || effectiveFramework?.type || 'Framework';
 
         return childNode;
       });
@@ -1128,6 +1137,7 @@ const Editor = () => {
           text, parentNode.x + 300, parentNode.y, childType, description, source, citation
         );
         node.generatedWithFramework = true;
+        node.frameworkName = frameworkConfig5w1h?.value || '5w1h';
         if (documentId) {
           if (childType === 'question') { node.backgroundColor = '#3b82f6'; node.borderColor = '#60a5fa'; }
           else if (childType === 'answer') { node.backgroundColor = '#10b981'; node.borderColor = '#34d399'; }
@@ -1257,7 +1267,7 @@ const Editor = () => {
         // Send PARENT TYPE (not child) so server knows whether to use context
         const nodeCount = parseInt(localStorage.getItem('chatinvis_node_count') || '3');
         console.log('Editor: Generating nodes from edit with frameworkConfig:', frameworkConfigRef.current);
-        const responses = await iaService.generateNodes(
+        const result = await iaService.generateNodes(
           editingText,
           currentNode.type,  // PARENT TYPE (question or answer)
           nodeCount, // Number of nodes to generate from config
@@ -1265,6 +1275,7 @@ const Editor = () => {
           documentId,  // Pass documentId for RAG
           frameworkConfigRef.current  // Pass framework config from ref for latest value
         );
+        const responses = result.nodes || result;
 
         const positions = calculateChildrenPositions(currentNode, responses.length, state.tree);
 
@@ -1375,11 +1386,12 @@ const Editor = () => {
         detailsPopupNodeId,
         handleToggleDetailsPopup,
         handleGenerateWithFramework,
-        handleGenerateAll
+        handleGenerateAll,
+        handleNotesChange
     );
     setNodes(nodes);
     setEdges(edges);
-  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup, handleGenerateWithFramework, handleGenerateAll]);
+  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup, handleGenerateWithFramework, handleGenerateAll, handleNotesChange]);
 
   const handleNodeDragStop = useCallback((event, draggedNode) => {
     const targetNode = nodes.find(

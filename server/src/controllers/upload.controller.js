@@ -189,10 +189,11 @@ export const uploadPDF = async (req, res) => {
     }
 
     const userId = req.user.id;
-    const { mindMapId } = req.body;
+    const { mindMapId, pdfMode = 'rag' } = req.body;
 
     console.log(' userId:', userId);
     console.log(' mindMapId:', mindMapId);
+    console.log(' pdfMode:', pdfMode);
 
     if (!mindMapId) {
       console.log(' mindMapId missing');
@@ -203,7 +204,7 @@ export const uploadPDF = async (req, res) => {
       });
     }
 
-    console.log(' Processing PDF with RAG:', {
+    console.log(` Processing PDF with ${pdfMode === 'full' ? 'Full Prompt' : 'RAG'}:`, {
       filename: req.file.originalname,
       size: req.file.size,
       mindMapId
@@ -213,7 +214,8 @@ export const uploadPDF = async (req, res) => {
       req.file.path,
       userId,
       mindMapId,
-      req.file.originalname
+      req.file.originalname,
+      pdfMode
     );
 
     console.log(' PDF processed successfully, document ID:', document._id);

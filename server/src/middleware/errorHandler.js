@@ -2,6 +2,10 @@ export const errorHandler = (err, req, res, next) => {
   console.error('\n ERROR:', err.message);
   console.error('Stack:', err.stack);
 
+  if (res.headersSent) {
+    return next(err);
+  }
+
   // Default error
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal server error';

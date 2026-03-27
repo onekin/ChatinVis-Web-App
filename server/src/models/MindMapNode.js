@@ -51,6 +51,10 @@ const mindMapNodeSchema = new mongoose.Schema(
       type: String,
       default: null
     },
+    notes: {
+      type: String,
+      default: ''
+    },
     source: {
       type: String,
       default: 'Manual'

@@ -282,6 +282,7 @@ export const saveMindMapState = async (req, res) => {
           borderColor: node.borderColor,
           borderWidth: node.borderWidth,
           description: node.description,
+          notes: node.notes || '',
           source: node.source,
           feedback: node.feedback || { message: '', rating: null },
           collapsed: node.collapsed,

@@ -38,12 +38,63 @@ class PDFService {
     return this.PDFParse;
   }
 
-  async processPDF(filePath, userId, mindMapId, originalFilename) {
+  async processPDF(filePath, userId, mindMapId, originalFilename, pdfMode = 'rag') {
+    if (pdfMode === 'full') {
+      return this.processFullPDF(filePath, userId, mindMapId, originalFilename);
+    }
+    return this.processRAGPDF(filePath, userId, mindMapId, originalFilename);
+  }
+
+  async processFullPDF(filePath, userId, mindMapId, originalFilename) {
+    try {
+      this.initialize();
+      console.log('[PDF Service] Full Prompt mode - leyendo PDF:', originalFilename);
+      const PDFParse = await this.loadPDFParse();
+      const dataBuffer = await fs.promises.readFile(filePath);
+      const pdfData = await PDFParse(dataBuffer);
+
+      const fullText = pdfData.text;
+      const numPages = pdfData.numpages;
+
+      if (!fullText || fullText.trim().length === 0) {
+        throw new Error('El PDF no contiene texto extraible. Puede ser un PDF escaneado.');
+      }
+
+      console.log(`[PDF Service] Full Prompt - ${numPages} páginas, ${fullText.length} caracteres`);
+
+      const document = new Document({
+        originalFilename,
+        uploadedBy: userId,
+        mindMapId,
+        filePath,
+        pdfMode: 'full',
+        fullText,
+        metadata: {
+          title: originalFilename.replace('.pdf', ''),
+          pages: numPages,
+          wordCount: fullText.split(/\s+/).length,
+          processedAt: new Date()
+        },
+        chunks: [],
+        status: 'completed'
+      });
+
+      await document.save();
+      console.log('[PDF Service] Documento Full Prompt guardado con ID:', document._id);
+
+      return document;
+    } catch (error) {
+      console.error('[PDF Service] Error procesando PDF (full):', error.message);
+      throw error;
+    }
+  }
+
+  async processRAGPDF(filePath, userId, mindMapId, originalFilename) {
     try {
       this.initialize();
       console.log('[PDF Service] Leyendo PDF:', originalFilename);
       const PDFParse = await this.loadPDFParse();
-      const dataBuffer = fs.readFileSync(filePath);
+      const dataBuffer = await fs.promises.readFile(filePath);
       const pdfData = await PDFParse(dataBuffer);
 
       const fullText = pdfData.text;
@@ -93,6 +144,7 @@ class PDFService {
         uploadedBy: userId,
         mindMapId,
         filePath,
+        pdfMode: 'rag',
         metadata: {
           title: originalFilename.replace('.pdf', ''),
           pages: numPages,
