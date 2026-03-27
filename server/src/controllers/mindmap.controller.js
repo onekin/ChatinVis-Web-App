@@ -1,8 +1,20 @@
 import { validationResult } from 'express-validator';
 import openaiService from '../services/openai.service.js';
+import logSuggestionService from '../services/logSuggestion.service.js';
 import MindMap from '../models/MindMap.js';
 import MindMapNode from '../models/MindMapNode.js';
 
+const MAX_EDIT_HISTORY_ENTRIES = 100;
+
+function recordEdit(mindMap, action, userId) {
+  if (!mindMap.metadata) mindMap.metadata = {};
+  if (!mindMap.metadata.editHistory) mindMap.metadata.editHistory = [];
+  mindMap.metadata.editHistory.push({ action, user: userId, timestamp: new Date() });
+  if (mindMap.metadata.editHistory.length > MAX_EDIT_HISTORY_ENTRIES) {
+    mindMap.metadata.editHistory = mindMap.metadata.editHistory.slice(-MAX_EDIT_HISTORY_ENTRIES);
+  }
+  mindMap.metadata.lastEditedBy = userId;
+}
 
 // Create a new mind map
 export const createMindMap = async (req, res) => {
@@ -102,8 +114,14 @@ export const getMindMapById = async (req, res) => {
     }
 
     // Check if user has access
-    const isOwner = mindMap.owner._id.toString() === userId;
-    const isCollaborator = mindMap.collaborators.some(c => c.user._id.toString() === userId);
+    // owner may be null after populate if the owning user was deleted
+    const ownerId = mindMap.owner?._id ?? mindMap.owner;
+    console.log('[getMindMapById] ownerId:', ownerId, typeof ownerId, ownerId?.toString());
+    console.log('[getMindMapById] userId:', userId, typeof userId);
+    const isOwner = ownerId?.toString() === userId?.toString();
+    const isCollaborator = mindMap.collaborators.some(
+      c => c.user != null && (c.user._id ?? c.user).toString() === userId
+    );
 
     if (!isOwner && !isCollaborator && !mindMap.isPublic) {
       return res.status(403).json({
@@ -158,22 +176,7 @@ export const updateMindMap = async (req, res) => {
     if (tags) mindMap.tags = tags;
 
     // Add to edit history
-    if (!mindMap.metadata) {
-      mindMap.metadata = {};
-    }
-    if (!mindMap.metadata.editHistory) {
-      mindMap.metadata.editHistory = [];
-    }
-
-    mindMap.metadata.editHistory.push({
-      action: 'updated',
-      user: userId,
-      timestamp: new Date()
-    });
-    if (mindMap.metadata.editHistory.length > 100) {
-      mindMap.metadata.editHistory = mindMap.metadata.editHistory.slice(-100);
-    }
-    mindMap.metadata.lastEditedBy = userId;
+    recordEdit(mindMap, 'updated', userId);
 
     await mindMap.save();
 
@@ -279,6 +282,7 @@ export const saveMindMapState = async (req, res) => {
           borderColor: node.borderColor,
           borderWidth: node.borderWidth,
           description: node.description,
+          notes: node.notes || '',
           source: node.source,
           feedback: node.feedback || { message: '', rating: null },
           collapsed: node.collapsed,
@@ -325,22 +329,7 @@ export const saveMindMapState = async (req, res) => {
     }
 
     // Update edit history
-    if (!mindMap.metadata) {
-      mindMap.metadata = {};
-    }
-    if (!mindMap.metadata.editHistory) {
-      mindMap.metadata.editHistory = [];
-    }
-
-    mindMap.metadata.editHistory.push({
-      action: 'saved',
-      user: userId,
-      timestamp: new Date()
-    });
-    if (mindMap.metadata.editHistory.length > 100) {
-      mindMap.metadata.editHistory = mindMap.metadata.editHistory.slice(-100);
-    }
-    mindMap.metadata.lastEditedBy = userId;
+    recordEdit(mindMap, 'saved', userId);
 
     await mindMap.save();
 
@@ -404,50 +393,73 @@ export const generateNodes = async (req, res, next) => {
       });
     }
 
-    const { nodeText, nodeTipo, count = 3, nodeContext, documentId, frameworkConfig } = req.body;
+    const { nodeText, nodeTipo, count = 3, nodeContext, documentId, frameworkConfig, mapId } = req.body;
 
-    console.log('\n' + ''.repeat(80));
+    console.log('\n' + '='.repeat(80));
     console.log(' POST /api/mindmap/generate-nodes');
-    console.log('═'.repeat(80));
+    console.log('='.repeat(80));
     console.log(`Request Parameters:`);
-    console.log(`  • Node Text: "${nodeText}"`);
-    console.log(`  • Node Type: ${nodeTipo}`);
-    console.log(`  • Count: ${count}`);
-    console.log(`  • Document ID: ${documentId || 'None'}`);
-    
+    console.log(`  Node Text: "${nodeText}"`);
+    console.log(`  Node Type: ${nodeTipo}`);
+    console.log(`  Count: ${count}`);
+    console.log(`  Document ID: ${documentId || 'None'}`);
+    console.log(`  Map ID: ${mapId || 'None'}`);
+
     if (nodeContext) {
-      console.log(`\n CONTEXT RECEIVED (Respuestas con contexto):`);
-      console.log(`  • Path Length: ${nodeContext.pathLength}`);
-      console.log(`  • Full Path: ${nodeContext.fullPath?.join(' → ') || 'N/A'}`);
-      console.log(`  • Root (L1): "${nodeContext.firstQuestion}"`);
-      console.log(`  • Pregunta (L${nodeContext.pathLength - 1}): "${nodeContext.previousQuestion}"`);
-      console.log(`  • Generando respuesta desde: "${nodeContext.currentAnswer}"`);
-      console.log(`\n  → PromptBuilder will use CONTEXTUAL prompt`);
-    } else {
-      console.log(`\n  NO CONTEXT (Respuestas básicas)`);
-      console.log(`  → PromptBuilder will use BASIC prompt`);
+      console.log(`\n CONTEXT RECEIVED:`);
+      console.log(`  Path Length: ${nodeContext.pathLength}`);
+      console.log(`  Full Path: ${nodeContext.fullPath?.join(' -> ') || 'N/A'}`);
     }
 
     if (frameworkConfig && frameworkConfig.enabled) {
-      console.log(`\n FRAMEWORK ENABLED:`);
-      console.log(`  • Type: ${frameworkConfig.type}`);
-      console.log(`  • Value: ${frameworkConfig.value}`);
+      console.log(`\n FRAMEWORK ENABLED: ${frameworkConfig.type} - ${frameworkConfig.value}`);
     }
 
-    // Call OpenAI service
-    console.log('\n Calling OpenAI service...');
-    const result = await openaiService.generateNodes(nodeText, nodeTipo, count, nodeContext, documentId, frameworkConfig);
+    // Run LLM generation and log-based generation in parallel
+    console.log('\n Calling OpenAI service + Log suggestion service...');
 
-    console.log(`\n Successfully generated ${result.nodes.length} nodes`);
-    console.log('═'.repeat(80) + '\n');
+    const [llmResult, logResult] = await Promise.allSettled([
+      openaiService.generateNodes(nodeText, nodeTipo, count, nodeContext, documentId, frameworkConfig),
+      mapId
+        ? logSuggestionService.generateFromLogs(mapId, nodeText, nodeContext)
+        : Promise.resolve([])
+    ]);
 
-    // Success response
+    const nodes = llmResult.status === 'fulfilled' ? llmResult.value.nodes : [];
+    const logNodes = logResult.status === 'fulfilled' ? logResult.value : [];
+
+    if (llmResult.status === 'rejected') {
+      console.error(' LLM generation failed:', llmResult.reason?.message);
+    }
+    if (logResult.status === 'rejected') {
+      console.error(' Log suggestion failed:', logResult.reason?.message);
+    }
+
+    // Cross-validate after we have the LLM nodes
+    let crossValidation = { matches: [] };
+    if (mapId && nodes.length > 0) {
+      try {
+        crossValidation = await logSuggestionService.crossValidate(mapId, nodes);
+        if (crossValidation.matches.length > 0) {
+          console.log(` Cross-validation found ${crossValidation.matches.length} matches`);
+        }
+      } catch (e) {
+        console.error(' Cross-validation failed:', e.message);
+      }
+    }
+
+    console.log(`\n Generated ${nodes.length} LLM nodes, ${logNodes.length} log nodes`);
+    console.log('='.repeat(80) + '\n');
+
     res.json({
       success: true,
-      nodes: result.nodes,
+      nodes,
+      logNodes,
+      crossValidation,
       metadata: {
-        model: 'gpt-3.5-turbo',
-        count: result.nodes.length,
+        model: 'gpt-4o',
+        count: nodes.length,
+        logCount: logNodes.length,
         tipo: nodeTipo,
         hasContext: !!nodeContext
       }

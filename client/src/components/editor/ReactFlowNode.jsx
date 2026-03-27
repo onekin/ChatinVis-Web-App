@@ -8,6 +8,13 @@ import SummarizePopup from './SummarizePopup';
 import NodeContextMenu from './NodeContextMenu';
 import CitationViewer from './CitationViewer';
 import FeedbackPopup from './FeedbackPopup';
+import { useMapData } from '../../context/MapDataContext';
+
+const PREDEFINED_FRAMEWORKS = [
+  { value: 'cause-consequences', label: 'Cause & Consequences' },
+  { value: '5w1h', label: '5W1H (Who, What, When, Where, Why, How)' },
+  { value: 'swot', label: 'SWOT Analysis' },
+];
 
 // Helper functions for default colors
 function getDefaultBackgroundColor(type) {
@@ -47,10 +54,15 @@ function calculateFontSize(text, width, height) {
 }
 
 const ReactFlowNode = ({ data }) => {
-  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, showDetailsPopup, onToggleDetailsPopup } = data;
+  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, onNotesChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, onGenerateWithFramework, onGenerateAll, showDetailsPopup, onToggleDetailsPopup } = data;
+  const { frameworkConfig, updateFrameworkConfig } = useMapData();
   const [showSummarizePopup, setShowSummarizePopup] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   const [showChildOptions, setShowChildOptions] = useState(false);
+  const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
+  const [pickerType, setPickerType] = useState('predefined');
+  const [pickerValue, setPickerValue] = useState('cause-consequences');
+  const [pickerCustom, setPickerCustom] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const nodeRef = useRef(null);
@@ -171,6 +183,47 @@ const ReactFlowNode = ({ data }) => {
       });
     }
     setShowChildOptions(!showChildOptions);
+    setShowFrameworkPicker(false);
+  };
+
+  const activeFrameworkLabel = () => {
+    if (!frameworkConfig?.enabled) return '5W1H';
+    if (frameworkConfig.type === 'custom') return 'Custom';
+    const found = PREDEFINED_FRAMEWORKS.find(f => f.value === frameworkConfig.value);
+    return found ? found.label.split(' ')[0] : frameworkConfig.value;
+  };
+
+  const handleOpenFrameworkPicker = (e) => {
+    e.stopPropagation();
+    // init picker state from current config
+    if (frameworkConfig?.enabled) {
+      setPickerType(frameworkConfig.type || 'predefined');
+      setPickerValue(frameworkConfig.type === 'predefined' ? frameworkConfig.value : 'cause-consequences');
+      setPickerCustom(frameworkConfig.type === 'custom' ? frameworkConfig.value : '');
+    } else {
+      setPickerType('predefined');
+      setPickerValue('cause-consequences');
+      setPickerCustom('');
+    }
+    setShowFrameworkPicker(true);
+  };
+
+  const handleFrameworkPickerApply = (e) => {
+    e.stopPropagation();
+    const newConfig = {
+      enabled: true,
+      type: pickerType,
+      value: pickerType === 'predefined' ? pickerValue : pickerCustom,
+    };
+    updateFrameworkConfig(newConfig);
+    setShowFrameworkPicker(false);
+  };
+
+  const handleGenerateWithFrameworkClick = (e) => {
+    e.stopPropagation();
+    setShowChildOptions(false);
+    setShowFrameworkPicker(false);
+    if (onGenerateWithFramework) onGenerateWithFramework(node);
   };
 
   const handleAIChildClick = (e) => {
@@ -231,17 +284,28 @@ const ReactFlowNode = ({ data }) => {
     backgroundColor: node.backgroundColor || getDefaultBackgroundColor(node.type),
     borderColor: determineBorderColor(),
     borderWidth: `${node.borderWidth || 2}px`,
+    borderStyle: node.generatedWithFramework ? 'dashed' : (node.borderStyle || 'solid'),
+    borderRadius: node.addedManually ? '0px' : undefined,
   };
+
+  const isFromLogs = node.source === 'SystemLog';
+  const isFromFramework = node.generatedWithFramework && !isFromLogs;
+  const isManual = node.addedManually;
+  const isLLM = !isFromLogs && !isFromFramework && !isManual;
 
   return (
     <>
     <div
       ref={nodeRef}
-      className={`mindmap-node ${selected ? 'selected' : ''} node-type-${node.type}`}
+      className={`mindmap-node ${selected ? 'selected' : ''} node-type-${node.type}${node.generatedWithFramework ? ' node-framework' : ''}${isFromLogs ? ' node-from-logs' : ''}`}
       style={nodeStyle}
       onDoubleClick={(e) => onNodeDoubleClick(e, node)}
       onClick={(e) => onNodeClick(e, node)}
     >
+      {isFromLogs && <span className="node-source-label node-source-logs">From Logs</span>}
+      {isLLM && <span className="node-source-label node-source-llm">LLM</span>}
+      {isFromFramework && <span className="node-source-label node-source-framework">{node.frameworkName || 'Framework'}</span>}
+      {isManual && <span className="node-source-label node-source-manual">Manual</span>}
       <Handle type="target" position={Position.Left} />
       {!isEditing && (
         <button
@@ -280,7 +344,7 @@ const ReactFlowNode = ({ data }) => {
             disabled={isLoading}
             title="Generate with AI"
           >
-            {isLoading ? '⏳ Generating...' : '✨ Generate'}
+            {isLoading ? ' Generating...' : ' Generate'}
           </button>
           {isLoading && (
             <div className="node-loading">
@@ -296,11 +360,11 @@ const ReactFlowNode = ({ data }) => {
           </div>
           {node.citation && <CitationViewer citation={node.citation} />}
           <div className="node-action-buttons">
-            {(node.description || node.source) && (
+            {(node.description || node.source || node.notes) && (
               <button
                 className="node-action-btn"
                 onClick={handleTogglePopup}
-                title="View Description"
+                title="View Details & Notes"
               >
                 ℹ
               </button>
@@ -342,11 +406,12 @@ const ReactFlowNode = ({ data }) => {
           </div>
         </div>
       )}
-      {showDetailsPopup && (node.description || node.source) && createPortal(
+      {showDetailsPopup && (node.description || node.source || node.notes) && createPortal(
         <NodeDetailsPopup
           node={node}
           nodeRef={nodeRef}
           onClose={() => onToggleDetailsPopup && onToggleDetailsPopup(node.id)}
+          onNotesChange={onNotesChange}
         />,
         document.body
       )}
@@ -381,23 +446,80 @@ const ReactFlowNode = ({ data }) => {
       )}
       {showChildOptions && createPortal(
         <div className="child-options-popup" ref={childOptionsRef} style={{ top: childOptionsPosition.top, left: childOptionsPosition.left }}>
-          <button className="popup-close" onClick={() => setShowChildOptions(false)}>×</button>
+          <button className="popup-close" onClick={() => { setShowChildOptions(false); setShowFrameworkPicker(false); }}>×</button>
           <div className="popup-content">
             <h3 className="popup-title">Add Child</h3>
             <div className="child-options-buttons">
-              <button
-                className="child-option-btn ai-option"
-                onClick={handleAIChildClick}
-              >
-                <span className="option-icon">✨</span>
+              <button className="child-option-btn ai-option" onClick={handleAIChildClick}>
                 <span className="option-text">Generate with AI</span>
               </button>
-              <button
-                className="child-option-btn manual-option"
-                onClick={handleManualChildClick}
-              >
-                <span className="option-icon">➕</span>
+              <button className="child-option-btn manual-option" onClick={handleManualChildClick}>
                 <span className="option-text">Add manually</span>
+              </button>
+
+              {/* Framework button + inline picker */}
+              <div className="framework-option-wrapper">
+                <div className="framework-option-row">
+                  <button
+                    className="child-option-btn generate-framework-option framework-main-btn"
+                    onClick={handleGenerateWithFrameworkClick}
+                  >
+                    <span className="option-text">Generate with framework</span>
+                  </button>
+                  <button
+                    className="framework-badge-btn"
+                    onClick={handleOpenFrameworkPicker}
+                    title="Change framework"
+                  >
+                    {activeFrameworkLabel()}
+                  </button>
+                </div>
+
+                {showFrameworkPicker && (
+                  <div className="framework-picker" onClick={e => e.stopPropagation()}>
+                    <div className="framework-picker-tabs">
+                      <button
+                        className={`fpicker-tab ${pickerType === 'predefined' ? 'active' : ''}`}
+                        onClick={() => setPickerType('predefined')}
+                      >Predefined</button>
+                      <button
+                        className={`fpicker-tab ${pickerType === 'custom' ? 'active' : ''}`}
+                        onClick={() => setPickerType('custom')}
+                      >Custom</button>
+                    </div>
+                    {pickerType === 'predefined' ? (
+                      <div className="fpicker-list">
+                        {PREDEFINED_FRAMEWORKS.map(f => (
+                          <button
+                            key={f.value}
+                            className={`fpicker-item ${pickerValue === f.value ? 'active' : ''}`}
+                            onClick={() => setPickerValue(f.value)}
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <textarea
+                        className="fpicker-custom"
+                        value={pickerCustom}
+                        onChange={e => setPickerCustom(e.target.value)}
+                        placeholder="Describe your framework..."
+                        maxLength={500}
+                      />
+                    )}
+                    <button className="fpicker-apply" onClick={handleFrameworkPickerApply}>
+                      Apply
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                className="child-option-btn generate-all-option"
+                onClick={() => { setShowChildOptions(false); if (onGenerateAll) onGenerateAll(node); }}
+              >
+                <span className="option-text">Generate All</span>
               </button>
             </div>
           </div>

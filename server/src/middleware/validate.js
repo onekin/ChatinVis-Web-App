@@ -36,6 +36,14 @@ export const validateGenerateNodes = [
       throw new Error('documentId must be a string or null');
     }),
 
+  body('mapId')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined) return true;
+      if (typeof value === 'string') return true;
+      throw new Error('mapId must be a string or null');
+    }),
+
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './NodeDetailsPopup.css';
 
-const NodeDetailsPopup = ({ node, nodeRef, onClose }) => {
+const NodeDetailsPopup = ({ node, nodeRef, onClose, onNotesChange }) => {
   const popupRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [notesValue, setNotesValue] = useState(node?.notes || '');
+
+  // Sync notesValue when node changes
+  useEffect(() => {
+    setNotesValue(node?.notes || '');
+  }, [node?.id, node?.notes]);
 
   // Update position function
   const updatePosition = () => {
@@ -61,18 +67,25 @@ const NodeDetailsPopup = ({ node, nodeRef, onClose }) => {
     };
   }, [onClose]);
 
+  // Save notes on blur
+  const handleNotesBlur = () => {
+    if (onNotesChange && notesValue !== (node?.notes || '')) {
+      onNotesChange(node, notesValue);
+    }
+  };
+
   if (!node) return null;
 
   const rawDescription = node.description || '';
   const source = node.source || null;
   const isPDF = source && source.startsWith('PDF');
 
-  // Parse description: split out "📄 Extracto del PDF:" and "source N" citation
+  // Parse description: split out "Extracto del PDF:" and "source N" citation
   let cleanDescription = rawDescription;
   let excerpt = null;
 
-  if (isPDF && rawDescription.includes('📄 Extracto del PDF:')) {
-    const pdfMarker = '📄 Extracto del PDF:';
+  if (isPDF && rawDescription.includes('Extracto del PDF:')) {
+    const pdfMarker = 'Extracto del PDF:';
     const markerIndex = rawDescription.indexOf(pdfMarker);
     cleanDescription = rawDescription.substring(0, markerIndex).trim();
 
@@ -99,13 +112,27 @@ const NodeDetailsPopup = ({ node, nodeRef, onClose }) => {
         top: `${position.top}px`,
         left: `${position.left}px`
       }}
+      onClick={(e) => e.stopPropagation()}
     >
-      <button className="tooltip-close" onClick={onClose}>×</button>
+      <button className="tooltip-close" onClick={onClose}>x</button>
       <div className="tooltip-content">
         <div className="tooltip-section">
           <span className="tooltip-section-label">Description</span>
           <p className="tooltip-description">{displayDescription}</p>
         </div>
+
+        <div className="tooltip-section tooltip-notes-section">
+          <span className="tooltip-section-label">Notes</span>
+          <textarea
+            className="tooltip-notes-input"
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            onBlur={handleNotesBlur}
+            placeholder="Add your notes here..."
+            rows={3}
+          />
+        </div>
+
         {source && (
           <div className="tooltip-excerpt">
             {isPDF ? (

@@ -12,6 +12,7 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [compacting, setCompacting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [pdfMode, setPdfMode] = useState('rag');
 
   const [styles, setStyles] = useState({
     backgroundColor: node.backgroundColor,
@@ -98,12 +99,13 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
 
     setUploading(true);
     setUploadSuccess(false);
-    setLoadingMessage(`Processing "${file.name}" with RAG...`);
-    toast.loading(`Processing "${file.name}" with RAG...`, { id: 'upload-pdf' });
+    const modeLabel = pdfMode === 'full' ? 'Full Prompt' : 'RAG';
+    setLoadingMessage(`Processing "${file.name}" with ${modeLabel}...`);
+    toast.loading(`Processing "${file.name}" with ${modeLabel}...`, { id: 'upload-pdf' });
 
-    console.log('Calling documentService.uploadPDF...');
+    console.log('Calling documentService.uploadPDF...', { pdfMode });
     try {
-      const document = await documentService.uploadPDF(file, mindMapId, (progress) => {
+      const document = await documentService.uploadPDF(file, mindMapId, pdfMode, (progress) => {
         console.log(` Upload progress: ${progress}%`);
         setLoadingMessage(`Processing: ${progress}%`);
       });
@@ -301,6 +303,26 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
       {activeTab === 'actions' && (
         <div className="context-menu-content">
           <div className="actions-section">
+            <div className="pdf-mode-selector">
+              <span className="pdf-mode-label">PDF Mode</span>
+              <div className="pdf-mode-options">
+                <button
+                  className={`pdf-mode-option ${pdfMode === 'rag' ? 'active' : ''}`}
+                  onClick={() => setPdfMode('rag')}
+                  title="Search relevant chunks using embeddings (efficient, less context)"
+                >
+                  RAG
+                </button>
+                <button
+                  className={`pdf-mode-option ${pdfMode === 'full' ? 'active' : ''}`}
+                  onClick={() => setPdfMode('full')}
+                  title="Inject full PDF text into the prompt (more context, higher token usage)"
+                >
+                  Full Prompt
+                </button>
+              </div>
+            </div>
+
             <button
               className={`action-button pdf-button ${uploading ? 'uploading' : ''} ${uploadSuccess ? 'success' : ''}`}
               onClick={() => pdfInputRef.current?.click()}

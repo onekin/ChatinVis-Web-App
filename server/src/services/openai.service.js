@@ -2,6 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import PromptBuilder from './PromptBuilder.js';
 import pdfService from './pdf.service.js';
+import Document from '../models/Document.js';
 
 class OpenAIService {
   constructor() {
@@ -83,22 +84,28 @@ class OpenAIService {
       let pdfChunks = null;
 
       if (documentId) {
-        console.log('\n RAG MODE ENABLED - Searching PDF for relevant context...');
-        console.log(`  • Document ID: ${documentId}`);
-        console.log(`  • Query: "${nodeText}"`);
-        console.log(`  • Requesting top 3 chunks`);
         try {
-          const chunks = await pdfService.searchRelevantChunks(documentId, nodeText, 3);
-          if (chunks && chunks.length > 0) {
-            console.log(` Found ${chunks.length} relevant chunks from PDF:`);
-            chunks.forEach((chunk, i) => {
-              console.log(`   Chunk ${i + 1}: Page ${chunk.pageNumber}, Similarity: ${chunk.similarity.toFixed(3)}`);
-              console.log(`   Preview: ${chunk.text.substring(0, 100)}...`);
-            });
-            pdfChunks = chunks;
-            options.pdfChunks = chunks;
+          const docMeta = await Document.findById(documentId).select('pdfMode fullText');
+          if (docMeta?.pdfMode === 'full' && docMeta.fullText) {
+            console.log('\n FULL PROMPT MODE - Injecting complete PDF text...');
+            options.pdfFullText = docMeta.fullText;
           } else {
-            console.log('  No chunks found or empty result');
+            console.log('\n RAG MODE ENABLED - Searching PDF for relevant context...');
+            console.log(`  • Document ID: ${documentId}`);
+            console.log(`  • Query: "${nodeText}"`);
+            console.log(`  • Requesting top 3 chunks`);
+            const chunks = await pdfService.searchRelevantChunks(documentId, nodeText, 3);
+            if (chunks && chunks.length > 0) {
+              console.log(` Found ${chunks.length} relevant chunks from PDF:`);
+              chunks.forEach((chunk, i) => {
+                console.log(`   Chunk ${i + 1}: Page ${chunk.pageNumber}, Similarity: ${chunk.similarity.toFixed(3)}`);
+                console.log(`   Preview: ${chunk.text.substring(0, 100)}...`);
+              });
+              pdfChunks = chunks;
+              options.pdfChunks = chunks;
+            } else {
+              console.log('  No chunks found or empty result');
+            }
           }
         } catch (pdfError) {
           console.error(' Failed to retrieve PDF context:', pdfError.message);
@@ -118,7 +125,10 @@ class OpenAIService {
       if (nodeTipo === 'pregunta') {
         // QUESTION → ANSWERS
         console.log(`  → Generating ANSWERS from a QUESTION`);
-        if (pdfChunks && pdfChunks.length > 0) {
+        if (options.pdfFullText) {
+          console.log(`  → Using PDF prompt with Full Prompt context`);
+          promptType = 'pdf';
+        } else if (pdfChunks && pdfChunks.length > 0) {
           console.log(`  → Using PDF prompt with RAG context`);
           promptType = 'pdf';
         } else {
@@ -405,10 +415,19 @@ class OpenAIService {
           console.log('\nPDF PROMPT (RAG-Enhanced)');
           console.log('═'.repeat(80));
           
-          if (options.pdfChunks && options.pdfChunks.length > 0) {
+          if (options.pdfFullText) {
+            console.log('Using Full Prompt mode - injecting complete PDF text');
+            prompt = PromptBuilder.getPromptForPDFAnswers(nodeContext, question);
+            prompt += '\n\nFULL PDF CONTENT:\n';
+            prompt += '═'.repeat(80) + '\n';
+            prompt += options.pdfFullText + '\n';
+            prompt += '═'.repeat(80) + '\n';
+            prompt += 'Based STRICTLY on the above PDF content, answer the question.\n';
+            console.log(` Added full PDF text (${options.pdfFullText.length} chars) to prompt`);
+          } else if (options.pdfChunks && options.pdfChunks.length > 0) {
             console.log(`Using ${options.pdfChunks.length} PDF chunks as context`);
             prompt = PromptBuilder.getPromptForPDFAnswers(nodeContext, question);
-            
+
             // Add the actual PDF content to the prompt
             prompt += '\n\nRELEVANT CONTEXT FROM PDF:\n';
             prompt += '═'.repeat(80) + '\n';

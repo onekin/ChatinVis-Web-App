@@ -52,7 +52,10 @@ const treeToFlow = (
   onPDFUploaded,
   onGenerateDirectly,
   detailsPopupNodeId,
-  onToggleDetailsPopup
+  onToggleDetailsPopup,
+  onGenerateWithFramework,
+  onGenerateAll,
+  onNotesChange
 ) => {
   const nodes = [];
   const edges = [];
@@ -80,9 +83,12 @@ const treeToFlow = (
         selected: node.id === selectedNodeId,
         mindMapId,
         onGenerateDirectly,
+        onGenerateWithFramework,
+        onGenerateAll,
         onPDFUploaded,
         showDetailsPopup: detailsPopupNodeId === node.id,
         onToggleDetailsPopup,
+        onNotesChange,
       },
     });
 
@@ -615,6 +621,11 @@ const Editor = () => {
     dispatch(actionCreators.updateNodeFeedback(node.id, feedback));
   }, [dispatch, mapId]);
 
+  const handleNotesChange = useCallback((node, notes) => {
+    if (!node || !node.id) return;
+    dispatch(actionCreators.updateNodeProperty(node.id, 'notes', notes));
+  }, [dispatch]);
+
   const handleCanvasClick = useCallback(() => {
     setEditingNodeId(null);
     setSelectedNodeId(null);
@@ -654,6 +665,8 @@ const Editor = () => {
       parentNode.y,       // Temporary Y position (layout will adjust)
       getChildType(parentNode.type, pathLength)
     );
+
+    newChild.addedManually = true;
 
     dispatch(actionCreators.addChild(parentNode.id, newChild));
   }, [state.tree, mapId]);
@@ -734,7 +747,7 @@ const Editor = () => {
 
     try {
       setIsLoading(true);
-      toast.loading(`🤖 Analyzing ${parentNode.children.length} nodes...`, { id: 'summarize', duration: Infinity });
+      toast.loading(`🤖 Analyzing ${parentNode.children.length} nodes...`, { id: 'summarize' });
 
       // Prepare nodes for API
       const nodesToAggregate = parentNode.children.map(child => ({
@@ -743,7 +756,7 @@ const Editor = () => {
         title: child.text
       }));
 
-      toast.loading(`🔄 Compacting into ${targetCount} clusters...`, { id: 'summarize', duration: Infinity });
+      toast.loading(`🔄 Compacting into ${targetCount} clusters...`, { id: 'summarize' });
 
       // Call aggregation API
       const clusters = await iaService.aggregateNodes(
@@ -754,7 +767,7 @@ const Editor = () => {
 
       console.log('Clusters received:', clusters);
 
-      toast.loading(`✨ Creating ${clusters.length} new nodes...`, { id: 'summarize', duration: Infinity });
+      toast.loading(`✨ Creating ${clusters.length} new nodes...`, { id: 'summarize' });
 
       // Calculate positions for new nodes
       const positions = calculateChildrenPositions(parentNode, clusters.length, state.tree);
@@ -857,7 +870,7 @@ const Editor = () => {
       const nodePath = getNodePath(state.tree, parentNode.id);
 
       console.log(' Generating nodes for:', parentNode.text);
-      toast.loading('🤖 Generating nodes with AI...', { id: 'generate', duration: Infinity });
+      toast.loading('🤖 Generating nodes with AI...', { id: 'generate' });
 
       const nodeCount = parseInt(localStorage.getItem('chatinvis_node_count') || '3');
       const nodeContext = nodePath && parentNode && nodePath.length > 1
@@ -872,14 +885,16 @@ const Editor = () => {
         : null;
 
       console.log('Editor: Generating nodes with frameworkConfig:', frameworkConfigRef.current);
-      const responses = await iaService.generateNodes(
+      const result = await iaService.generateNodes(
         parentNode.text,
         parentNode.type,
         nodeCount,
         nodeContext,
         documentId,
-        frameworkConfigRef.current
+        frameworkConfigRef.current,
+        mapId
       );
+      const responses = result.nodes || result;
 
       const positions = calculateChildrenPositions(parentNode, responses.length, state.tree);
       const pathLength = nodePath?.length || 0;
@@ -902,6 +917,8 @@ const Editor = () => {
           source,
           citation
         );
+
+        childNode.borderStyle = 'dashed';
 
         // If PDF is uploaded, make nodes lighter
         if (documentId) {
@@ -955,6 +972,220 @@ const Editor = () => {
     }
   }, [state.tree, mapId, documentId, iaService]);
 
+  const handleGenerateWithFramework = useCallback(async (parentNode) => {
+    if (!parentNode) return;
+
+    const usingDefaultFramework = !frameworkConfigRef.current?.enabled;
+    const effectiveFramework = usingDefaultFramework
+      ? { enabled: true, type: 'predefined', value: '5w1h' }
+      : frameworkConfigRef.current;
+
+    setIsLoading(true);
+
+    try {
+      const nodePath = getNodePath(state.tree, parentNode.id);
+
+      toast.loading('🤖 Generating nodes with framework...', { id: 'generate-framework' });
+
+      const nodeCount = usingDefaultFramework
+        ? 5
+        : parseInt(localStorage.getItem('chatinvis_node_count') || '3');
+      const nodeContext = nodePath && parentNode && nodePath.length > 1
+        ? {
+            pathLength: nodePath.length,
+            fullPath: nodePath.map(n => n.text),
+            firstQuestion: nodePath[0]?.text || '',
+            previousQuestion: nodePath[nodePath.length - 2]?.text || '',
+            currentAnswer: parentNode.type === 'answer' ? parentNode.text : nodePath[nodePath.length - 2]?.text || '',
+            currentAnswerNote: parentNode.type === 'answer' ? (parentNode.description || '') : (nodePath[nodePath.length - 2]?.description || '')
+          }
+        : null;
+
+      const result = await iaService.generateNodes(
+        parentNode.text,
+        parentNode.type,
+        nodeCount,
+        nodeContext,
+        documentId,
+        effectiveFramework
+      );
+      const responses = result.nodes || result;
+
+      const positions = calculateChildrenPositions(parentNode, responses.length, state.tree);
+      const pathLength = nodePath?.length || 0;
+      const childType = getChildType(parentNode.type, pathLength);
+
+      const childrenNodes = responses.map((response, index) => {
+        const position = positions[index];
+        const text = typeof response === 'string' ? response : (response.text || '');
+        const description = typeof response === 'object' ? (response.description || '') : '';
+        const source = typeof response === 'object' ? (response.source || 'Generated by AI') : 'Generated by AI';
+        const citation = typeof response === 'object' ? (response.citation || null) : null;
+
+        const childNode = new MindMapNode(
+          `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          text,
+          position.x,
+          position.y,
+          childType,
+          description,
+          source,
+          citation
+        );
+
+        if (documentId) {
+          if (childType === 'question') {
+            childNode.backgroundColor = '#3b82f6';
+            childNode.borderColor = '#60a5fa';
+          } else if (childType === 'answer') {
+            childNode.backgroundColor = '#10b981';
+            childNode.borderColor = '#34d399';
+          }
+        }
+
+        childNode.generatedWithFramework = true;
+        childNode.frameworkName = effectiveFramework?.value || effectiveFramework?.type || 'Framework';
+
+        return childNode;
+      });
+
+      dispatch(actionCreators.addChildren(parentNode.id, childrenNodes));
+
+      toast.success(`Generated ${childrenNodes.length} nodes with framework`, { id: 'generate-framework', duration: 3000 });
+    } catch (error) {
+      console.error('Failed to generate nodes with framework:', error);
+      toast.error('Failed to generate nodes with framework', { id: 'generate-framework' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [state.tree, documentId, iaService]);
+
+  const handleGenerateAll = useCallback(async (parentNode) => {
+    if (!parentNode) return;
+
+    setIsLoading(true);
+    toast.loading('Generating all nodes...', { id: 'generate-all' });
+
+    try {
+      const nodePath = getNodePath(state.tree, parentNode.id);
+      const pathLength = nodePath?.length || 0;
+      const childType = getChildType(parentNode.type, pathLength);
+      const nodeContext = nodePath && nodePath.length > 1
+        ? {
+            pathLength: nodePath.length,
+            fullPath: nodePath.map(n => n.text),
+            firstQuestion: nodePath[0]?.text || '',
+            previousQuestion: nodePath[nodePath.length - 2]?.text || '',
+            currentAnswer: parentNode.type === 'answer' ? parentNode.text : nodePath[nodePath.length - 2]?.text || '',
+            currentAnswerNote: parentNode.type === 'answer' ? (parentNode.description || '') : (nodePath[nodePath.length - 2]?.description || '')
+          }
+        : null;
+
+      const aiNodeCount = parseInt(localStorage.getItem('chatinvis_node_count') || '3');
+      const frameworkConfig5w1h = { enabled: true, type: 'predefined', value: '5w1h' };
+
+      // Run AI, framework, and log-based generation in parallel
+      const [aiResult, frameworkResult] = await Promise.all([
+        iaService.generateNodes(parentNode.text, parentNode.type, aiNodeCount, nodeContext, documentId, frameworkConfigRef.current, mapId),
+        iaService.generateNodes(parentNode.text, parentNode.type, 5, nodeContext, documentId, frameworkConfig5w1h, mapId),
+      ]);
+
+      // Extract responses - new format returns { nodes, logNodes, crossValidation }
+      const aiResponses = aiResult.nodes || aiResult;
+      const frameworkResponses = frameworkResult.nodes || frameworkResult;
+      const logNodes = aiResult.logNodes || [];
+      const crossValidation = aiResult.crossValidation || { matches: [] };
+
+      const allNodes = [];
+
+      // 1. Manual node
+      const manualNode = new MindMapNode(
+        `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        'New Node',
+        parentNode.x + 300,
+        parentNode.y,
+        childType
+      );
+      manualNode.addedManually = true;
+      allNodes.push(manualNode);
+
+      // 2. AI-generated nodes
+      aiResponses.forEach((response) => {
+        const text = typeof response === 'string' ? response : (response.text || '');
+        const description = typeof response === 'object' ? (response.description || '') : '';
+        const source = typeof response === 'object' ? (response.source || 'Generated by AI') : 'Generated by AI';
+        const citation = typeof response === 'object' ? (response.citation || null) : null;
+        const node = new MindMapNode(
+          `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          text, parentNode.x + 300, parentNode.y, childType, description, source, citation
+        );
+        if (documentId) {
+          if (childType === 'question') { node.backgroundColor = '#3b82f6'; node.borderColor = '#60a5fa'; }
+          else if (childType === 'answer') { node.backgroundColor = '#10b981'; node.borderColor = '#34d399'; }
+        }
+        allNodes.push(node);
+      });
+
+      // 3. Framework-generated nodes
+      frameworkResponses.forEach((response) => {
+        const text = typeof response === 'string' ? response : (response.text || '');
+        const description = typeof response === 'object' ? (response.description || '') : '';
+        const source = typeof response === 'object' ? (response.source || 'Generated by AI') : 'Generated by AI';
+        const citation = typeof response === 'object' ? (response.citation || null) : null;
+        const node = new MindMapNode(
+          `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          text, parentNode.x + 300, parentNode.y, childType, description, source, citation
+        );
+        node.generatedWithFramework = true;
+        node.frameworkName = frameworkConfig5w1h?.value || '5w1h';
+        if (documentId) {
+          if (childType === 'question') { node.backgroundColor = '#3b82f6'; node.borderColor = '#60a5fa'; }
+          else if (childType === 'answer') { node.backgroundColor = '#10b981'; node.borderColor = '#34d399'; }
+        }
+        allNodes.push(node);
+      });
+
+      // 4. Log-suggested nodes (cloud style)
+      logNodes.forEach((response) => {
+        const text = typeof response === 'string' ? response : (response.text || '');
+        const description = typeof response === 'object' ? (response.description || '') : '';
+        const node = new MindMapNode(
+          `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          text, parentNode.x + 300, parentNode.y, childType, description, 'SystemLog'
+        );
+        node.source = 'SystemLog';
+        allNodes.push(node);
+      });
+
+      const positions = calculateChildrenPositions(parentNode, allNodes.length, state.tree);
+      allNodes.forEach((node, i) => {
+        node.x = positions[i].x;
+        node.y = positions[i].y;
+      });
+
+      dispatch(actionCreators.addChildren(parentNode.id, allNodes));
+
+      // Show cross-validation toast
+      if (crossValidation.matches && crossValidation.matches.length > 0) {
+        const messages = crossValidation.matches.map(m =>
+          `"${m.text}" was previously considered (${Math.round(m.similarity * 100)}% match)` +
+          (m.feedback ? ` \u2014 Rating: ${m.feedback.rateValue}/4` : '')
+        );
+        toast(messages.join('\n'), { duration: 8000, id: 'cross-validation' });
+      }
+
+      toast.success(
+        `Generated ${allNodes.length} nodes (1 manual, ${aiResponses.length} AI, ${frameworkResponses.length} framework, ${logNodes.length} from logs)`,
+        { id: 'generate-all', duration: 3000 }
+      );
+    } catch (error) {
+      console.error('Failed to generate all nodes:', error);
+      toast.error('Failed to generate all nodes', { id: 'generate-all' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [state.tree, documentId, iaService, mapId]);
+
   // Submit text changes and generate child nodes with AI
   const handleSubmit = useCallback(async () => {
     const editingNode = findNodeById(state.tree, editingNodeId);
@@ -979,9 +1210,9 @@ const Editor = () => {
       setIsLoading(true);
 
       if (documentId) {
-        toast.loading('🔍 Searching PDF for relevant context...', { id: 'generate', duration: Infinity });
+        toast.loading('🔍 Searching PDF for relevant context...', { id: 'generate' });
       } else {
-        toast.loading('🤖 Generating nodes with AI...', { id: 'generate', duration: Infinity });
+        toast.loading('🤖 Generating nodes with AI...', { id: 'generate' });
       }
 
       try {
@@ -1036,7 +1267,7 @@ const Editor = () => {
         // Send PARENT TYPE (not child) so server knows whether to use context
         const nodeCount = parseInt(localStorage.getItem('chatinvis_node_count') || '3');
         console.log('Editor: Generating nodes from edit with frameworkConfig:', frameworkConfigRef.current);
-        const responses = await iaService.generateNodes(
+        const result = await iaService.generateNodes(
           editingText,
           currentNode.type,  // PARENT TYPE (question or answer)
           nodeCount, // Number of nodes to generate from config
@@ -1044,6 +1275,7 @@ const Editor = () => {
           documentId,  // Pass documentId for RAG
           frameworkConfigRef.current  // Pass framework config from ref for latest value
         );
+        const responses = result.nodes || result;
 
         const positions = calculateChildrenPositions(currentNode, responses.length, state.tree);
 
@@ -1152,11 +1384,14 @@ const Editor = () => {
         handlePDFUploaded,
         handleGenerateDirectly,
         detailsPopupNodeId,
-        handleToggleDetailsPopup
+        handleToggleDetailsPopup,
+        handleGenerateWithFramework,
+        handleGenerateAll,
+        handleNotesChange
     );
     setNodes(nodes);
     setEdges(edges);
-  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup]);
+  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup, handleGenerateWithFramework, handleGenerateAll, handleNotesChange]);
 
   const handleNodeDragStop = useCallback((event, draggedNode) => {
     const targetNode = nodes.find(

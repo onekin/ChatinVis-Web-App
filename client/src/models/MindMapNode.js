@@ -8,6 +8,9 @@ class MindMapNode {
     this.source = source;
     this.citation = citation;
 
+    // User notes
+    this.notes = '';
+
     // User feedback
     this.feedback = {
       message: '',
@@ -59,6 +62,7 @@ class MindMapNode {
       this.borderColor = '#8b5cf6';
     }
     this.borderWidth = 2;
+    this.borderStyle = 'solid';
 
     // Relations (no parent reference to avoid circularity)
     this.children = [];
@@ -66,6 +70,8 @@ class MindMapNode {
     // Metadata
     this.collapsed = false;
     this.hasGeneratedChildren = false;
+    this.generatedWithFramework = false;
+    this.addedManually = false;
     this.createdAt = Date.now();
     this.lastModified = Date.now();
   }
@@ -107,6 +113,7 @@ class MindMapNode {
       description: this.description,
       source: this.source,
       citation: this.citation,
+      notes: this.notes,
       feedback: this.feedback,
       x: this.x,
       y: this.y,
@@ -118,8 +125,12 @@ class MindMapNode {
       backgroundColor: this.backgroundColor,
       borderColor: this.borderColor,
       borderWidth: this.borderWidth,
+      borderStyle: this.borderStyle,
       collapsed: this.collapsed,
       hasGeneratedChildren: this.hasGeneratedChildren,
+      generatedWithFramework: this.generatedWithFramework,
+      frameworkName: this.frameworkName || '',
+      addedManually: this.addedManually,
       createdAt: this.createdAt,
       lastModified: this.lastModified,
       children: this.children.map(child => child.toJSON())
@@ -172,6 +183,10 @@ class MindMapNode {
     node.backgroundColor = typeof data.backgroundColor === 'string' ? data.backgroundColor : node.backgroundColor;
     node.borderColor = typeof data.borderColor === 'string' ? data.borderColor : node.borderColor;
     node.borderWidth = typeof data.borderWidth === 'number' && data.borderWidth >= 0 ? data.borderWidth : 2;
+    node.borderStyle = typeof data.borderStyle === 'string' ? data.borderStyle : 'solid';
+
+    // Restore notes
+    node.notes = typeof data.notes === 'string' ? data.notes : '';
 
     // Restore feedback
     if (data.feedback && typeof data.feedback === 'object') {
@@ -184,6 +199,9 @@ class MindMapNode {
     // Restore metadata
     node.collapsed = Boolean(data.collapsed);
     node.hasGeneratedChildren = Boolean(data.hasGeneratedChildren);
+    node.generatedWithFramework = Boolean(data.generatedWithFramework);
+    node.frameworkName = typeof data.frameworkName === 'string' ? data.frameworkName : '';
+    node.addedManually = Boolean(data.addedManually);
     node.createdAt = typeof data.createdAt === 'number' ? data.createdAt : Date.now();
     node.lastModified = typeof data.lastModified === 'number' ? data.lastModified : Date.now();
 
@@ -219,6 +237,7 @@ class MindMapNode {
       this.citation
     );
 
+    cloned.notes = this.notes;
     cloned.feedback = { ...this.feedback };
     cloned.initialX = this.initialX;
     cloned.initialY = this.initialY;
@@ -228,8 +247,11 @@ class MindMapNode {
     cloned.backgroundColor = this.backgroundColor;
     cloned.borderColor = this.borderColor;
     cloned.borderWidth = this.borderWidth;
+    cloned.borderStyle = this.borderStyle;
     cloned.collapsed = this.collapsed;
     cloned.hasGeneratedChildren = this.hasGeneratedChildren;
+    cloned.generatedWithFramework = this.generatedWithFramework;
+    cloned.addedManually = this.addedManually;
 
     return cloned;
   }

@@ -29,6 +29,7 @@
     "multer": "^2.0.2",
     "pdf-parse": "^1.1.1",
     "pg": "^8.11.3",
+    "string-similarity-js": "^2.1.4",
     "winston": "^3.11.0"
   },
   "devDependencies": {

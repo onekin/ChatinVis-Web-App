@@ -97,6 +97,39 @@
   background: #9ca3af;
 }
 
+.tooltip-notes-section {
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.tooltip-notes-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  resize: vertical;
+  min-height: 60px;
+  max-height: 150px;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.tooltip-notes-input:focus {
+  border-color: #8b5cf6;
+  background: white;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.tooltip-notes-input::placeholder {
+  color: #9ca3af;
+}
+
 .tooltip-excerpt {
   padding-top: 12px;
   border-top: 1px solid #e5e7eb;

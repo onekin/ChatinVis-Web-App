@@ -81,13 +81,8 @@ app.use((req, res) => {
 // Global error handler (must be last)
 app.use(errorHandler);
 
-// Connect to MongoDB first, then start server
-try {
-  await connectDB();
-} catch (error) {
-  console.error('Failed to connect to MongoDB:', error);
-  process.exit(1);
-}
+// Connect to MongoDB first, then start server (connectDB exits on failure)
+await connectDB();
 
 const server = app.listen(PORT, () => {
   console.log(`\nServer running on port ${PORT}`);

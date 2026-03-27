@@ -39,6 +39,16 @@ const documentSchema = new mongoose.Schema({
         }
     }],
 
+    // PDF processing mode
+    pdfMode: {
+        type: String,
+        enum: ['rag', 'full'],
+        default: 'rag'
+    },
+
+    // Full text (only stored when pdfMode = 'full')
+    fullText: { type: String, default: '' },
+
     // Estado de procesamiento
     status: {
         type: String,

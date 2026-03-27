@@ -323,6 +323,53 @@
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
+.pdf-mode-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.pdf-mode-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pdf-mode-options {
+  display: flex;
+  gap: 4px;
+}
+
+.pdf-mode-option {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pdf-mode-option:hover {
+  border-color: #8b5cf6;
+  color: #7c3aed;
+}
+
+.pdf-mode-option.active {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+}
+
 .action-text {
   flex: 1;
 }

@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Settings, X, Palette } from 'lucide-react';
-import { useMapData } from '../../context/MapDataContext';
 import { mapService } from '../../services/mapService';
 import { toast } from 'react-hot-toast';
 import './SettingsPanel.css';
 
 const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, currentDocumentId, onFrameworkSaved }) => {
-  const { frameworkConfig, updateFrameworkConfig } = useMapData();
   const [nodeCount, setNodeCount] = useState(3);
 
   // Default colors
@@ -15,16 +13,10 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
   const [answerBgColor, setAnswerBgColor] = useState('#065f46');
   const [answerBorderColor, setAnswerBorderColor] = useState('#10b981');
 
-  // Framework configuration
-  const [frameworkEnabled, setFrameworkEnabled] = useState(false);
-  const [frameworkType, setFrameworkType] = useState('predefined');
-  const [frameworkValue, setFrameworkValue] = useState('cause-consequences');
-  const [customFramework, setCustomFramework] = useState('');
-
   // Load saved configuration only when panel opens
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const savedNodeCount = localStorage.getItem('chatinvis_node_count') || '3';
     const savedQuestionBg = localStorage.getItem('chatinvis_question_bg') || '#1e3a8a';
     const savedQuestionBorder = localStorage.getItem('chatinvis_question_border') || '#3b82f6';
@@ -36,52 +28,15 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
     setQuestionBorderColor(savedQuestionBorder);
     setAnswerBgColor(savedAnswerBg);
     setAnswerBorderColor(savedAnswerBorder);
-
-    // Load framework from context
-    console.log('SettingsPanel: Loading framework config:', frameworkConfig);
-    if (frameworkConfig && frameworkConfig.enabled) {
-      setFrameworkEnabled(true);
-      setFrameworkType(frameworkConfig.type);
-      setFrameworkValue(frameworkConfig.value);
-      if (frameworkConfig.type === 'custom') {
-        setCustomFramework(frameworkConfig.value);
-      }
-    } else {
-      setFrameworkEnabled(false);
-      setFrameworkType('predefined');
-      setFrameworkValue('cause-consequences');
-      const savedCustom = localStorage.getItem('chatinvis_custom_framework') || '';
-      setCustomFramework(savedCustom);
-    }
-  }, [isOpen, frameworkConfig]);
+  }, [isOpen]);
 
   const handleSave = async () => {
-    // Validate custom framework if enabled
-    if (frameworkEnabled && frameworkType === 'custom' && !customFramework.trim()) {
-      alert('Please enter custom framework text or switch to predefined frameworks');
-      return;
-    }
-
     localStorage.setItem('chatinvis_node_count', nodeCount.toString());
     localStorage.setItem('chatinvis_question_bg', questionBgColor);
     localStorage.setItem('chatinvis_question_border', questionBorderColor);
     localStorage.setItem('chatinvis_answer_bg', answerBgColor);
     localStorage.setItem('chatinvis_answer_border', answerBorderColor);
 
-    // Update framework config via context
-    const newFrameworkConfig = frameworkEnabled ? {
-      enabled: true,
-      type: frameworkType,
-      value: frameworkType === 'predefined' ? frameworkValue : customFramework
-    } : null;
-
-    console.log('SettingsPanel: Saving framework config:', newFrameworkConfig);
-    updateFrameworkConfig(newFrameworkConfig);
-
-    // Also save custom framework text separately
-    localStorage.setItem('chatinvis_custom_framework', customFramework);
-
-    // Auto-save to database if map exists
     if (mapId) {
       try {
         toast.loading('Saving settings to map...', { id: 'save-settings' });
@@ -89,16 +44,10 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
           tree: currentTree,
           title: currentMapName,
           documentId: currentDocumentId,
-          frameworkConfig: newFrameworkConfig
         });
         toast.success('Settings saved!', { id: 'save-settings' });
-        
-        // Reload framework from DB to ensure Editor has the latest value
-        if (onFrameworkSaved) {
-          await onFrameworkSaved();
-        }
       } catch (error) {
-        console.error('Error saving framework to database:', error);
+        console.error('Error saving settings:', error);
         toast.error('Failed to save settings to map', { id: 'save-settings' });
       }
     }
@@ -113,20 +62,11 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
     setAnswerBgColor('#065f46');
     setAnswerBorderColor('#10b981');
 
-    setFrameworkEnabled(false);
-    setFrameworkType('predefined');
-    setFrameworkValue('cause-consequences');
-    setCustomFramework('');
-
     localStorage.removeItem('chatinvis_node_count');
     localStorage.removeItem('chatinvis_question_bg');
     localStorage.removeItem('chatinvis_question_border');
     localStorage.removeItem('chatinvis_answer_bg');
     localStorage.removeItem('chatinvis_answer_border');
-    localStorage.removeItem('chatinvis_custom_framework');
-
-    // Reset framework via context
-    updateFrameworkConfig(null);
   };
 
   if (!isOpen) return null;
@@ -257,106 +197,6 @@ const SettingsPanel = ({ isOpen, onClose, mapId, currentTree, currentMapName, cu
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="settings-divider"></div>
-
-          <div className="settings-group">
-            <label className="settings-label">
-              Framework Configuration
-            </label>
-            <p className="settings-help-text">
-              Apply a thinking framework to guide AI responses throughout the mind map
-            </p>
-
-            <div style={{ marginTop: '12px' }}>
-              <label className="settings-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={frameworkEnabled}
-                  onChange={(e) => setFrameworkEnabled(e.target.checked)}
-                />
-                <span>Enable Framework</span>
-              </label>
-            </div>
-
-            {frameworkEnabled && (
-              <div style={{ marginTop: '16px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="settings-radio-label">
-                    <input
-                      type="radio"
-                      name="frameworkType"
-                      value="predefined"
-                      checked={frameworkType === 'predefined'}
-                      onChange={(e) => setFrameworkType(e.target.value)}
-                    />
-                    <span>Predefined Frameworks</span>
-                  </label>
-                </div>
-
-                {frameworkType === 'predefined' && (
-                  <select
-                    value={frameworkValue}
-                    onChange={(e) => setFrameworkValue(e.target.value)}
-                    className="settings-select"
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      marginBottom: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc'
-                    }}
-                  >
-                    <option value="cause-consequences">Cause & Consequences</option>
-                    <option value="5w1h">5W1H (Who, What, When, Where, Why, How)</option>
-                    <option value="swot">SWOT Analysis (Strengths, Weaknesses, Opportunities, Threats)</option>
-                  </select>
-                )}
-
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="settings-radio-label">
-                    <input
-                      type="radio"
-                      name="frameworkType"
-                      value="custom"
-                      checked={frameworkType === 'custom'}
-                      onChange={(e) => setFrameworkType(e.target.value)}
-                    />
-                    <span>Custom Framework</span>
-                  </label>
-                </div>
-
-                {frameworkType === 'custom' && (
-                  <textarea
-                    value={customFramework}
-                    onChange={(e) => setCustomFramework(e.target.value)}
-                    placeholder="Enter your custom framework instructions. Example: 'Focus on ethical implications, technical feasibility, and economic impact for each answer.'"
-                    className="settings-textarea"
-                    maxLength={500}
-                    style={{
-                      width: '100%',
-                      minHeight: '80px',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                      fontFamily: 'inherit',
-                      fontSize: '14px',
-                      resize: 'vertical'
-                    }}
-                  />
-                )}
-
-                <div className="settings-info-box" style={{ marginTop: '12px', fontSize: '12px' }}>
-                  <p><strong>Framework Preview:</strong></p>
-                  <p style={{ fontStyle: 'italic', color: '#666' }}>
-                    {frameworkType === 'predefined'
-                      ? `Using ${frameworkValue.toUpperCase().replace(/-/g, ' ')} framework`
-                      : customFramework || 'Enter custom framework text above'}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="settings-info-box">

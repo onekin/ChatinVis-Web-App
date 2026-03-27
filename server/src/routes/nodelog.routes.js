@@ -9,6 +9,9 @@ router.post('/', nodeLogController.createLog);
 // Obtener logs por mapId
 router.get('/map/:mapId', nodeLogController.getLogsByMapId);
 
+// Get logs filtered for question suggestion
+router.get('/map/:mapId/questions', nodeLogController.getLogsForQuestions);
+
 // Obtener logs por nodeId
 router.get('/node/:nodeId', nodeLogController.getLogsByNodeId);
 
