@@ -54,7 +54,7 @@ function calculateFontSize(text, width, height) {
 }
 
 const ReactFlowNode = ({ data }) => {
-  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, onNotesChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, onGenerateWithFramework, onGenerateAll, showDetailsPopup, onToggleDetailsPopup } = data;
+  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, onNotesChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, onGenerateWithFramework, onGenerateAll, onGenerateFromLogs, showDetailsPopup, onToggleDetailsPopup } = data;
   const { frameworkConfig, updateFrameworkConfig } = useMapData();
   const [showSummarizePopup, setShowSummarizePopup] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
@@ -277,6 +277,11 @@ const ReactFlowNode = ({ data }) => {
     return node.borderColor || getDefaultBorderColor(node.type);
   };
 
+  const isFromLogs = node.source === 'SystemLog';
+  const isFromFramework = node.generatedWithFramework && !isFromLogs;
+  const isManual = node.addedManually;
+  const isLLM = !isFromLogs && !isFromFramework && !isManual;
+
   const nodeStyle = {
     width: `${width}px`,
     height: `${height}px`,
@@ -284,14 +289,9 @@ const ReactFlowNode = ({ data }) => {
     backgroundColor: node.backgroundColor || getDefaultBackgroundColor(node.type),
     borderColor: determineBorderColor(),
     borderWidth: `${node.borderWidth || 2}px`,
-    borderStyle: node.generatedWithFramework ? 'dashed' : (node.borderStyle || 'solid'),
+    borderStyle: isFromLogs ? 'dotted' : node.generatedWithFramework ? 'dashed' : (node.borderStyle || 'solid'),
     borderRadius: node.addedManually ? '0px' : undefined,
   };
-
-  const isFromLogs = node.source === 'SystemLog';
-  const isFromFramework = node.generatedWithFramework && !isFromLogs;
-  const isManual = node.addedManually;
-  const isLLM = !isFromLogs && !isFromFramework && !isManual;
 
   return (
     <>
@@ -303,7 +303,7 @@ const ReactFlowNode = ({ data }) => {
       onClick={(e) => onNodeClick(e, node)}
     >
       {isFromLogs && <span className="node-source-label node-source-logs">From Logs</span>}
-      {isLLM && <span className="node-source-label node-source-llm">LLM</span>}
+      {isLLM && node.id !== 'root' && <span className="node-source-label node-source-llm">LLM</span>}
       {isFromFramework && <span className="node-source-label node-source-framework">{node.frameworkName || 'Framework'}</span>}
       {isManual && <span className="node-source-label node-source-manual">Manual</span>}
       <Handle type="target" position={Position.Left} />
@@ -514,6 +514,13 @@ const ReactFlowNode = ({ data }) => {
                   </div>
                 )}
               </div>
+
+              <button
+                className="child-option-btn generate-logs-option"
+                onClick={() => { setShowChildOptions(false); if (onGenerateFromLogs) onGenerateFromLogs(node); }}
+              >
+                <span className="option-text">Generate from Logs</span>
+              </button>
 
               <button
                 className="child-option-btn generate-all-option"

@@ -155,6 +155,17 @@
   color: #0891b2;
 }
 
+/* Generate from Logs - blue/cornflower */
+.generate-logs-option:hover {
+  border-color: #6495ed;
+  background: #eff6ff;
+  box-shadow: 0 6px 20px rgba(100, 149, 237, 0.35);
+}
+
+.generate-logs-option:hover .option-text {
+  color: #4169e1;
+}
+
 /* Generate All - green */
 .generate-all-option:hover {
   border-color: #10b981;
