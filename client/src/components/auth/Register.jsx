@@ -113,10 +113,16 @@ const Register = ({ onSwitchToLogin }) => {
       );
       
       if (!result.success) {
-        setErrors({ general: result.error || 'A user with that email alredy exists' });
+        // Provide a more user-friendly error message
+        const errorMessage = result.error || 'Registration failed';
+        if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('user already')) {
+          setErrors({ general: 'This email is already registered. Please sign in or use a different email.' });
+        } else {
+          setErrors({ general: errorMessage });
+        }
       }
     } catch (error) {
-      setErrors({ general: 'An error occurred during registration' });
+      setErrors({ general: 'Unable to complete registration. Please try again later.' });
     } finally {
       setIsSubmitting(false);
     }
