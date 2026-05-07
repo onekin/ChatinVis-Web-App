@@ -21,7 +21,7 @@ services:
     platform: linux/amd64
     container_name: chatinvis-server
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     volumes:
       - ./server/src:/app/src
       - ./server/uploads:/app/uploads

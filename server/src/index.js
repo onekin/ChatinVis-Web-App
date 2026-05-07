@@ -41,9 +41,14 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet()); // Security headers
 
 // Configure CORS to accept multiple origins
-const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(o => o.trim());
+const corsOrigins = (process.env.CORS_ORIGIN || '*').split(',').map(o => o.trim());
 app.use(cors({
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    if (!origin || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS policy does not allow access from origin ${origin}`));
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -84,9 +89,9 @@ app.use(errorHandler);
 // Connect to MongoDB first, then start server (connectDB exits on failure)
 await connectDB();
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`\nServer running on port ${PORT}`);
-  console.log(`CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+  console.log(`CORS enabled for: ${process.env.CORS_ORIGIN || '*'}`);
   console.log(`OpenAI API configured: ${process.env.OPENAI_API_KEY ? 'configured' : 'not configured'}`);
   console.log(`Health check: http://localhost:${PORT}/health\n`);
 });
