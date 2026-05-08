@@ -48,7 +48,7 @@ services:
       - ./client/index.html:/app/index.html
       - ./client/vite.config.js:/app/vite.config.js
     environment:
-      - VITE_API_URL=http://localhost:3001/api
+      - VITE_API_URL=/api
     depends_on:
       - server
     networks:

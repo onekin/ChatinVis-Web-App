@@ -7,6 +7,12 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     strictPort: false,
-    allowedHosts: ['chatinvis.garmendia.eus']
+    allowedHosts: ['chatinvis.garmendia.eus'],
+    proxy: {
+      '/api': {
+        target: 'http://server:3001',
+        changeOrigin: true,
+      }
+    }
   }
 })
