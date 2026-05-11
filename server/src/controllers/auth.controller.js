@@ -142,3 +142,52 @@ export const logout = async (req, res) => {
     });
   }
 };
+
+export const unlockServerDefault = async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required'
+      });
+    }
+
+    if (!process.env.SERVER_DEFAULT_PASSWORD) {
+      return res.status(500).json({
+        success: false,
+        error: 'SERVER_DEFAULT_PASSWORD is not configured on server'
+      });
+    }
+
+    if (password !== process.env.SERVER_DEFAULT_PASSWORD) {
+      return res.status(401).json({
+        success: false,
+        error: 'Incorrect server default password'
+      });
+    }
+
+    const accessToken = jwt.sign(
+      {
+        type: 'server-default-access',
+        userId: req.user.id
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Server default unlocked for 24 hours',
+      accessToken,
+      expiresIn: '1d'
+    });
+  } catch (error) {
+    console.error('Unlock server default error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Server error while unlocking server default'
+    });
+  }
+};

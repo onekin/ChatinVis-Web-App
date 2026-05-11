@@ -45,6 +45,7 @@ services:
       - "3000:3000"
     volumes:
       - ./client/src:/app/src
+      - ./client/public:/app/public
       - ./client/index.html:/app/index.html
       - ./client/vite.config.js:/app/vite.config.js
     environment:

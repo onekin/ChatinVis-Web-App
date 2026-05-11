@@ -1,7 +1,103 @@
 import { validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import UserCommand from '../models/UserCommand.js';
 import openaiService from '../services/openai.service.js';
+import geminiService from '../services/gemini.service.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+
+const LLM_PROVIDER_LABELS = {
+    openai: 'GPT (OpenAI)',
+    claude: 'Claude (Anthropic)',
+    gemini: 'Gemini (Google)',
+    groq: 'Groq'
+};
+
+function resolveLLMFromRequest(body = {}) {
+    const { llmProvider, llmApiKey, llmModel, serverDefaultAccessToken, serverDefaultModel } = body;
+
+    if (llmProvider && llmApiKey) {
+        if (llmProvider === 'gemini') {
+            return {
+                llm: geminiService.createForRequest(llmApiKey, llmModel),
+                provider: llmProvider
+            };
+        }
+
+        return {
+            llm: openaiService.createForRequest(llmProvider, llmApiKey, llmModel).llm,
+            provider: llmProvider
+        };
+    }
+
+    if (!serverDefaultAccessToken) {
+        const error = new Error('Server default LLM is locked. Unlock it from LLM Models or provide your own API key.');
+        error.statusCode = 403;
+        throw error;
+    }
+
+    try {
+        const decoded = jwt.verify(serverDefaultAccessToken, process.env.JWT_SECRET);
+        if (decoded?.type !== 'server-default-access') {
+            const error = new Error('Invalid server default access token. Unlock again from LLM Models.');
+            error.statusCode = 401;
+            throw error;
+        }
+    } catch (verifyError) {
+        const error = new Error('Server default access expired or invalid. Unlock again from LLM Models.');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const resolvedModel = serverDefaultModel || 'gpt-4o';
+    return {
+        llm: openaiService.createForRequest('openai', process.env.OPENAI_API_KEY, resolvedModel).llm,
+        provider: 'openai'
+    };
+}
+
+function getApiKeyError(error, provider = 'openai') {
+    const joined = [
+        error?.message,
+        error?.response?.data?.error,
+        error?.response?.data?.message,
+        error?.cause?.message,
+    ].filter(Boolean).join(' | ').toLowerCase();
+
+    const providerLabel = LLM_PROVIDER_LABELS[provider] || provider;
+
+    const missingKey =
+        joined.includes('api key is required') ||
+        joined.includes('api_key not found') ||
+        joined.includes('not found in environment') ||
+        joined.includes('missing api key') ||
+        joined.includes('no api key');
+
+    if (missingKey) {
+        return {
+            status: 400,
+            error: `Missing API key for ${providerLabel}. Configure it in LLM Models.`
+        };
+    }
+
+    const invalidKey =
+        joined.includes('incorrect api key') ||
+        joined.includes('invalid api key') ||
+        joined.includes('invalid_api_key') ||
+        joined.includes('api key not valid') ||
+        joined.includes('authentication') ||
+        joined.includes('unauthorized') ||
+        joined.includes('permission denied') ||
+        joined.includes('401');
+
+    if (invalidKey) {
+        return {
+            status: 401,
+            error: `Invalid API key for ${providerLabel}. Please verify it in LLM Models.`
+        };
+    }
+
+    return null;
+}
 
 /**
  * Compila una especificación de comando usando IA
@@ -49,7 +145,8 @@ Respond ONLY with valid JSON in this format:
             new HumanMessage(metaPrompt)
         ];
 
-        const response = await openaiService.llm.invoke(messages);
+        const llmRuntime = resolveLLMFromRequest(req.body);
+        const response = await llmRuntime.llm.invoke(messages);
         const responseText = response.content;
 
         let compiledData;
@@ -79,6 +176,19 @@ Respond ONLY with valid JSON in this format:
 
     } catch (error) {
         console.error('Compile user command error:', error);
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                error: error.message
+            });
+        }
+        const llmError = getApiKeyError(error, req.body?.llmProvider || 'openai');
+        if (llmError) {
+            return res.status(llmError.status).json({
+                success: false,
+                error: llmError.error
+            });
+        }
         next(error);
     }
 };
@@ -320,7 +430,8 @@ export const executeUserCommand = async (req, res, next) => {
             new HumanMessage(finalPrompt)
         ];
 
-        const response = await openaiService.llm.invoke(messages);
+        const llmRuntime = resolveLLMFromRequest(req.body);
+        const response = await llmRuntime.llm.invoke(messages);
         const result = response.content;
         
         res.json({
@@ -333,6 +444,19 @@ export const executeUserCommand = async (req, res, next) => {
 
     } catch (error) {
         console.error('Execute user command error:', error);
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                error: error.message
+            });
+        }
+        const llmError = getApiKeyError(error, req.body?.llmProvider || 'openai');
+        if (llmError) {
+            return res.status(llmError.status).json({
+                success: false,
+                error: llmError.error
+            });
+        }
         next(error);
     }
 };

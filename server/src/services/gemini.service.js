@@ -2,15 +2,18 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import PromptBuilder from './PromptBuilder.js';
 
 class GeminiService {
-  constructor() {
-    if (!process.env.GEMINI_API_KEY) {
+  constructor(override = null) {
+    const apiKey = (override && override.apiKey) ? override.apiKey : process.env.GEMINI_API_KEY;
+    const modelName = (override && override.model) ? override.model : 'gemini-2.5-flash';
+
+    if (!apiKey) {
       console.error('GEMINI_API_KEY not found in environment');
       throw new Error('Gemini API key is required');
     }
 
-    console.log('Initializing Gemini service with gemini-2.5-flash');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    console.log(`Initializing Gemini service with ${modelName}`);
+    const genAI = new GoogleGenerativeAI(apiKey);
+    this.model = genAI.getGenerativeModel({ model: modelName });
     console.log('Gemini instance created');
   }
 
@@ -335,6 +338,11 @@ class GeminiServiceProxy {
       this.serviceInstance = new GeminiService();
     }
     return this.serviceInstance;
+  }
+
+  /** Create a one-off instance with user-supplied credentials (not cached). */
+  createForRequest(apiKey, model) {
+    return new GeminiService({ apiKey, model });
   }
 
   generateNodes(nodeText, nodeTipo, count, nodeContextData) {

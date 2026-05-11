@@ -1,7 +1,8 @@
-import { Home, Star, Settings, Brain, TrendingUp, Sparkles } from 'lucide-react';
+import { Home, Star, Settings, TrendingUp, Sparkles } from 'lucide-react';
 import './Sidebar.css';
 import { mapService } from '../../services/mapService';
 import { useEffect, useState } from 'react';
+import logoImage from '../../utils/favicon-master-512.png';
 
 const Sidebar = () => {
   const [mapcount, setMapcount] = useState(0);
@@ -25,8 +26,8 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo-compact">
-          <div className="logo-symbol">
-            <Brain size={24} strokeWidth={2.5} />
+          <div className="logo-symbol logo-symbol-image">
+            <img src={logoImage} alt="ChatInVis logo" className="logo-image" />
           </div>
         </div>
         <h2 className="sidebar-title">ChatInVis</h2>

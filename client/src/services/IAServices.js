@@ -20,6 +20,20 @@ class IAService {
     });
   }
 
+  getConfiguredLLMPayload() {
+    const llmProvider = localStorage.getItem('chatinvis_llm_provider') || '';
+    const llmApiKey = llmProvider ? (localStorage.getItem('chatinvis_llm_apikey') || '') : '';
+    const llmModel = llmProvider ? (localStorage.getItem('chatinvis_llm_model') || '') : '';
+    const serverDefaultAccessToken = localStorage.getItem('chatinvis_server_default_access_token') || '';
+    const serverDefaultModel = localStorage.getItem('chatinvis_server_default_model') || 'gpt-4o';
+
+    if (llmProvider && llmApiKey) {
+      return { llmProvider, llmApiKey, llmModel };
+    }
+
+    return serverDefaultAccessToken ? { serverDefaultAccessToken, serverDefaultModel } : {};
+  }
+
 
   async generateNodes(nodeText, nodeTipo, count = 3, nodeContext = null, documentId = null, frameworkConfig = null, mapId = null) {
     try {
@@ -31,6 +45,8 @@ class IAService {
       };
       const mappedTipo = typeMap[nodeTipo] || nodeTipo;
 
+      const llmConfig = this.getConfiguredLLMPayload();
+
       const response = await this.apiClient.post('/mindmap/generate-nodes', {
         nodeText,
         nodeTipo: mappedTipo,
@@ -38,7 +54,8 @@ class IAService {
         nodeContext,
         documentId,
         frameworkConfig,
-        mapId
+        mapId,
+        ...llmConfig,
       });
 
       if (response.data.success && response.data.nodes) {
@@ -148,7 +165,11 @@ class IAService {
 
   async compileCommand(spec) {
     try {
-      const response = await this.apiClient.post('/mindmap/compile-command', spec);
+      const llmConfig = this.getConfiguredLLMPayload();
+      const response = await this.apiClient.post('/mindmap/compile-command', {
+        ...spec,
+        ...llmConfig,
+      });
       return response.data;
     } catch (error) {
       console.error('Command compilation failed:', error);
@@ -212,10 +233,12 @@ class IAService {
 
   async executeUserCommand(commandId, selectedNodes, params = {}) {
     try {
+      const llmConfig = this.getConfiguredLLMPayload();
       const response = await this.apiClient.post('/user-commands/execute', {
         commandId,
         selectedNodes,
-        params
+        params,
+        ...llmConfig,
       });
       return response.data;
     } catch (error) {

@@ -35,6 +35,19 @@
   box-shadow: 0 8px 24px rgba(77, 208, 225, 0.3);
 }
 
+.logo-symbol-image {
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .logo-symbol::after {
   content: '';
   position: absolute;
@@ -46,6 +59,10 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0.3;
+}
+
+.logo-symbol-image::after {
+  display: none;
 }
 
 .sidebar-title {

@@ -1,6 +1,6 @@
 import { useState, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Save, Share2, Settings } from 'lucide-react';
+import { ArrowLeft, Sparkles, Save, Bot, Settings } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import ReactFlow, {
   Controls,
@@ -15,6 +15,7 @@ import 'reactflow/dist/style.css';
 import './Editor.css';
 import Toolbar from '../components/editor/Toolbar';
 import SettingsPanel from '../components/editor/SettingsPanel';
+import LLMPanel from '../components/editor/LLMPanel';
 import LogsViewer from '../components/editor/LogsViewer';
 import NodeDetailPanel from '../components/editor/NodeDetailPanel';
 import CommandExecutionMenu from '../components/editor/CommandExecutionMenu';
@@ -152,6 +153,7 @@ const Editor = () => {
   const [pendingGenerateAllToast, setPendingGenerateAllToast] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLLMOpen, setIsLLMOpen] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [isUserCommandsOpen, setIsUserCommandsOpen] = useState(false);
@@ -1584,9 +1586,9 @@ const Editor = () => {
             <Save size={18} />
             Save
           </button>
-          <button className="editor-btn secondary">
-            <Share2 size={18} />
-            Share
+          <button className="editor-btn primary" onClick={() => setIsLLMOpen(true)}>
+            <Bot size={18} />
+            LLM Models
           </button>
           <button className="editor-btn primary" onClick={() => setIsSettingsOpen(true)}>
             <Settings size={18} />
@@ -1634,6 +1636,12 @@ const Editor = () => {
           <MiniMap nodeColor={n => n.data.node.backgroundColor} nodeStrokeWidth={3} zoomable pannable />
         </ReactFlow>
       </div>
+
+      {/* LLM Models Panel */}
+      <LLMPanel
+        isOpen={isLLMOpen}
+        onClose={() => setIsLLMOpen(false)}
+      />
 
       {/* Settings Panel */}
       <SettingsPanel

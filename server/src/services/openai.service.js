@@ -1,25 +1,63 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { ChatAnthropic } from '@langchain/anthropic';
 import PromptBuilder from './PromptBuilder.js';
 import pdfService from './pdf.service.js';
 import Document from '../models/Document.js';
 
 class OpenAIService {
-  constructor() {
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY not found in environment');
-      throw new Error('OpenAI API key is required');
+  /**
+   * @param {{ provider?: string, apiKey?: string, model?: string } | null} [override]
+   *   If provided, builds an LLM instance from user-supplied credentials.
+   *   provider: 'openai' | 'claude' | 'groq'
+   */
+  constructor(override = null) {
+    if (override && override.apiKey) {
+      this._buildDynamic(override);
+    } else {
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('OPENAI_API_KEY not found in environment');
+        throw new Error('OpenAI API key is required');
+      }
+      console.log('Initializing OpenAI service with gpt-5');
+      this.llm = new ChatOpenAI({
+        modelName: 'gpt-5',
+        maxCompletionTokens: 2000,
+        openAIApiKey: process.env.OPENAI_API_KEY,
+        timeout: 30000,
+      });
+      console.log('ChatOpenAI instance created with 30s timeout and 2000 max tokens');
     }
+  }
 
-    console.log('Initializing OpenAI service with gpt-4o');
-    this.llm = new ChatOpenAI({
-      modelName: 'gpt-4o',
-      temperature: 0.7,
-      maxTokens: 2000,
-      openAIApiKey: process.env.OPENAI_API_KEY,
-      timeout: 30000 // 30 second timeout
-    });
-    console.log('ChatOpenAI instance created with 30s timeout and 2000 max tokens');
+  _buildDynamic({ provider, apiKey, model }) {
+    const resolvedProvider = provider || 'openai';
+    console.log(`Initializing dynamic LLM: provider=${resolvedProvider}, model=${model || 'default'}`);
+    if (resolvedProvider === 'claude') {
+      this.llm = new ChatAnthropic({
+        modelName: model || 'claude-3-5-sonnet-20241022',
+        temperature: 0.7,
+        maxTokens: 2000,
+        anthropicApiKey: apiKey,
+      });
+    } else if (resolvedProvider === 'groq') {
+      this.llm = new ChatOpenAI({
+        modelName: model || 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        maxCompletionTokens: 2000,
+        openAIApiKey: apiKey,
+        configuration: { baseURL: 'https://api.groq.com/openai/v1' },
+        timeout: 30000,
+      });
+    } else {
+      this.llm = new ChatOpenAI({
+        modelName: model || 'gpt-5',
+        maxCompletionTokens: 2000,
+        openAIApiKey: apiKey,
+        timeout: 30000,
+      });
+    }
+    console.log('Dynamic LLM instance created');
   }
 
   async generateNodes(nodeText, nodeTipo, count = 3, nodeContextData = null, documentId = null, frameworkConfig = null) {
@@ -339,7 +377,7 @@ class OpenAIService {
           const node = {
             text,
             description,
-            source: excerpt ? 'PDF Extract' : 'OpenAI GPT-4o'
+            source: excerpt ? 'PDF Extract' : 'OpenAI GPT-5'
           };
 
           // Si hay excerpt del PDF, agregarlo a la descripción
@@ -634,6 +672,11 @@ class OpenAIServiceProxy {
 
   aggregateNodes(question, nodes, clusterCount) {
     return this.getInstance().aggregateNodes(question, nodes, clusterCount);
+  }
+
+  /** Create a one-off instance with user-supplied credentials (not cached). */
+  createForRequest(provider, apiKey, model) {
+    return new OpenAIService({ provider, apiKey, model });
   }
 
   get llm() {

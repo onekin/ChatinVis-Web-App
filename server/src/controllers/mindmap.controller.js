@@ -1,10 +1,37 @@
 import { validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import openaiService from '../services/openai.service.js';
+import geminiService from '../services/gemini.service.js';
 import logSuggestionService from '../services/logSuggestion.service.js';
 import MindMap from '../models/MindMap.js';
 import MindMapNode from '../models/MindMapNode.js';
 
 const MAX_EDIT_HISTORY_ENTRIES = 100;
+
+const getServerDefaultAccessError = (token) => {
+  if (!token) {
+    return {
+      status: 403,
+      error: 'Server default LLM is locked. Unlock it from LLM Models or provide your own API key.'
+    };
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded?.type !== 'server-default-access') {
+      return {
+        status: 401,
+        error: 'Invalid server default access token. Unlock again from LLM Models.'
+      };
+    }
+    return null;
+  } catch (error) {
+    return {
+      status: 401,
+      error: 'Server default access expired or invalid. Unlock again from LLM Models.'
+    };
+  }
+};
 
 function recordEdit(mindMap, action, userId) {
   if (!mindMap.metadata) mindMap.metadata = {};
@@ -393,7 +420,20 @@ export const generateNodes = async (req, res, next) => {
       });
     }
 
-    const { nodeText, nodeTipo, count = 3, nodeContext, documentId, frameworkConfig, mapId } = req.body;
+    const {
+      nodeText,
+      nodeTipo,
+      count = 3,
+      nodeContext,
+      documentId,
+      frameworkConfig,
+      mapId,
+      llmProvider,
+      llmApiKey,
+      llmModel,
+      serverDefaultAccessToken,
+      serverDefaultModel
+    } = req.body;
 
     console.log('\n' + '='.repeat(80));
     console.log(' POST /api/mindmap/generate-nodes');
@@ -415,11 +455,34 @@ export const generateNodes = async (req, res, next) => {
       console.log(`\n FRAMEWORK ENABLED: ${frameworkConfig.type} - ${frameworkConfig.value}`);
     }
 
+    // Select LLM service: user-provided credentials take priority over server defaults
+    let activeLLMService;
+    if (llmProvider && llmApiKey) {
+      console.log(`\n Using user-provided LLM: provider=${llmProvider}, model=${llmModel || 'default'}`);
+      if (llmProvider === 'gemini') {
+        activeLLMService = geminiService.createForRequest(llmApiKey, llmModel);
+      } else {
+        // openai, claude, groq all use the OpenAIService with dynamic constructor
+        activeLLMService = openaiService.createForRequest(llmProvider, llmApiKey, llmModel);
+      }
+    } else {
+      const accessError = getServerDefaultAccessError(serverDefaultAccessToken);
+      if (accessError) {
+        return res.status(accessError.status).json({
+          success: false,
+          error: accessError.error
+        });
+      }
+      const resolvedModel = serverDefaultModel || 'gpt-4o';
+      console.log(`\n Using default server LLM service (model: ${resolvedModel})`);
+      activeLLMService = openaiService.createForRequest('openai', process.env.OPENAI_API_KEY, resolvedModel);
+    }
+
     // Run LLM generation and log-based generation in parallel
-    console.log('\n Calling OpenAI service + Log suggestion service...');
+    console.log('\n Calling LLM service + Log suggestion service...');
 
     const [llmResult, logResult] = await Promise.allSettled([
-      openaiService.generateNodes(nodeText, nodeTipo, count, nodeContext, documentId, frameworkConfig),
+      activeLLMService.generateNodes(nodeText, nodeTipo, count, nodeContext, documentId, frameworkConfig),
       mapId
         ? logSuggestionService.generateFromLogs(mapId, nodeText, nodeContext)
         : Promise.resolve([])
@@ -457,7 +520,7 @@ export const generateNodes = async (req, res, next) => {
       logNodes,
       crossValidation,
       metadata: {
-        model: 'gpt-4o',
+        model: 'gpt-5',
         count: nodes.length,
         logCount: logNodes.length,
         tipo: nodeTipo,
