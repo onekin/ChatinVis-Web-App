@@ -883,6 +883,17 @@ const Editor = () => {
     setIsLoading(true);
 
     try {
+      const llmConfig = iaService.getConfiguredLLMPayload();
+    } catch (configError) {
+      if (configError.isConfigurationError) {
+        toast.error(configError.message, { id: 'generate', duration: 5000 });
+        setIsLoading(false);
+        setIsLLMOpen(true);
+        return;
+      }
+    }
+
+    try {
       const nodePath = getNodePath(state.tree, parentNode.id);
 
       console.log(' Generating nodes for:', parentNode.text);
@@ -1000,6 +1011,19 @@ const Editor = () => {
   const handleGenerateWithFramework = useCallback(async (parentNode) => {
     if (!parentNode) return;
 
+    setIsLoading(true);
+
+    try {
+      const llmConfig = iaService.getConfiguredLLMPayload();
+    } catch (configError) {
+      if (configError.isConfigurationError) {
+        toast.error(configError.message, { id: 'generate-framework', duration: 5000 });
+        setIsLoading(false);
+        setIsLLMOpen(true);
+        return;
+      }
+    }
+
     const usingDefaultFramework = !frameworkConfigRef.current?.enabled;
     const effectiveFramework = usingDefaultFramework
       ? { enabled: true, type: 'predefined', value: '5w1h' }
@@ -1089,6 +1113,18 @@ const Editor = () => {
     if (!parentNode) return;
 
     setIsLoading(true);
+
+    try {
+      const llmConfig = iaService.getConfiguredLLMPayload();
+    } catch (configError) {
+      if (configError.isConfigurationError) {
+        toast.error(configError.message, { id: 'generate-all', duration: 5000 });
+        setIsLoading(false);
+        setIsLLMOpen(true);
+        return;
+      }
+    }
+
     toast.loading('Generating all nodes...', { id: 'generate-all' });
 
     try {
@@ -1216,6 +1252,18 @@ const Editor = () => {
     if (!parentNode) return;
 
     setIsLoading(true);
+
+    try {
+      const llmConfig = iaService.getConfiguredLLMPayload();
+    } catch (configError) {
+      if (configError.isConfigurationError) {
+        toast.error(configError.message, { id: 'generate-logs', duration: 5000 });
+        setIsLoading(false);
+        setIsLLMOpen(true);
+        return;
+      }
+    }
+
     toast.loading('🔍 Searching logs for suggestions...', { id: 'generate-logs' });
 
     try {
@@ -1298,6 +1346,19 @@ const Editor = () => {
     // Generate child nodes ONLY if not generated before
     if (!editingNode.hasGeneratedChildren) {
       setIsLoading(true);
+
+      try {
+        const llmConfig = iaService.getConfiguredLLMPayload();
+      } catch (configError) {
+        if (configError.isConfigurationError) {
+          toast.error(configError.message, { id: 'generate', duration: 5000 });
+          setIsLoading(false);
+          setIsLLMOpen(true);
+          setEditingNodeId(null);
+          setEditingText('');
+          return;
+        }
+      }
 
       if (documentId) {
         toast.loading('🔍 Searching PDF for relevant context...', { id: 'generate' });

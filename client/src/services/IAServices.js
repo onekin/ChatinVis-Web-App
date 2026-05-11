@@ -31,7 +31,13 @@ class IAService {
       return { llmProvider, llmApiKey, llmModel };
     }
 
-    return serverDefaultAccessToken ? { serverDefaultAccessToken, serverDefaultModel } : {};
+    if (serverDefaultAccessToken) {
+      return { serverDefaultAccessToken, serverDefaultModel };
+    }
+
+    const error = new Error('No LLM configured. Please click the "LLM Models" button to set up your API key or unlock the server default.');
+    error.isConfigurationError = true;
+    throw error;
   }
 
 
