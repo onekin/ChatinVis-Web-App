@@ -19,45 +19,79 @@ class OpenAIService {
         console.error('OPENAI_API_KEY not found in environment');
         throw new Error('OpenAI API key is required');
       }
-      console.log('Initializing OpenAI service with gpt-5');
+      console.log('Initializing OpenAI service with gpt-4o-mini');
       this.llm = new ChatOpenAI({
-        modelName: 'gpt-5',
+        modelName: 'gpt-4o-mini',
         maxCompletionTokens: 2000,
         openAIApiKey: process.env.OPENAI_API_KEY,
-        timeout: 30000,
+        timeout: 60000,
+        maxRetries: 1,
+        modelKwargs: { response_format: { type: "json_object" } }
       });
-      console.log('ChatOpenAI instance created with 30s timeout and 2000 max tokens');
+      console.log('ChatOpenAI instance created with 60s timeout, maxRetries: 1, JSON mode, and gpt-4o-mini');
     }
   }
 
   _buildDynamic({ provider, apiKey, model }) {
     const resolvedProvider = provider || 'openai';
-    console.log(`Initializing dynamic LLM: provider=${resolvedProvider}, model=${model || 'default'}`);
+    
+    // Map optimistic future model names to currently available/stable model names
+    let resolvedModel = model;
+    if (resolvedProvider === 'openai') {
+      if (model === 'gpt-5') {
+        resolvedModel = 'gpt-4o';
+      } else if (model === 'gpt-5-mini') {
+        resolvedModel = 'gpt-4o-mini';
+      } else if (!model) {
+        resolvedModel = 'gpt-4o-mini';
+      }
+    } else if (resolvedProvider === 'claude') {
+      if (model === 'claude-sonnet-4-5') {
+        resolvedModel = 'claude-3-5-sonnet-20241022';
+      } else if (model === 'claude-haiku-4-5') {
+        resolvedModel = 'claude-3-5-haiku-20241022';
+      } else if (model === 'claude-opus-4-1') {
+        resolvedModel = 'claude-3-opus-20240229';
+      } else if (!model) {
+        resolvedModel = 'claude-3-5-sonnet-20241022';
+      }
+    } else if (resolvedProvider === 'groq') {
+      if (!model) {
+        resolvedModel = 'llama-3.1-8b-instant';
+      }
+    }
+
+    console.log(`Initializing dynamic LLM: provider=${resolvedProvider}, model=${model || 'default'} (mapped to ${resolvedModel})`);
+
     if (resolvedProvider === 'claude') {
       this.llm = new ChatAnthropic({
-        modelName: model || 'claude-3-5-sonnet-20241022',
+        modelName: resolvedModel,
         temperature: 0.7,
         maxTokens: 2000,
         anthropicApiKey: apiKey,
       });
     } else if (resolvedProvider === 'groq') {
       this.llm = new ChatOpenAI({
-        modelName: model || 'llama-3.3-70b-versatile',
+        modelName: resolvedModel,
         temperature: 0.7,
         maxCompletionTokens: 2000,
         openAIApiKey: apiKey,
         configuration: { baseURL: 'https://api.groq.com/openai/v1' },
         timeout: 30000,
+        maxRetries: 1,
+        modelKwargs: { response_format: { type: "json_object" } }
       });
     } else {
       this.llm = new ChatOpenAI({
-        modelName: model || 'gpt-5',
+        modelName: resolvedModel,
         maxCompletionTokens: 2000,
         openAIApiKey: apiKey,
         timeout: 30000,
+        maxRetries: 1,
+        modelKwargs: { response_format: { type: "json_object" } }
       });
     }
-    console.log('Dynamic LLM instance created');
+    console.log('Dynamic LLM instance created successfully');
   }
 
   async generateNodes(nodeText, nodeTipo, count = 3, nodeContextData = null, documentId = null, frameworkConfig = null) {
@@ -370,7 +404,7 @@ class OpenAIService {
           const node = {
             text,
             description,
-            source: excerpt ? 'PDF Extract' : 'OpenAI GPT-5'
+            source: excerpt ? 'PDF Extract' : 'OpenAI'
           };
 
           // Si hay excerpt del PDF, agregarlo a la descripción
@@ -561,7 +595,7 @@ class OpenAIService {
 
       // Add a timeout wrapper around the LLM call
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('OpenAI API call timeout after 30 seconds')), 30000)
+        setTimeout(() => reject(new Error('OpenAI API call timeout after 60 seconds')), 60000)
       );
 
       let response;

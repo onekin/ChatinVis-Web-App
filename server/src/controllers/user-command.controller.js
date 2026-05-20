@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import UserCommand from '../models/UserCommand.js';
 import openaiService from '../services/openai.service.js';
 import geminiService from '../services/gemini.service.js';
+import groqService from '../services/groqServices.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 const LLM_PROVIDER_LABELS = {
@@ -19,6 +20,12 @@ function resolveLLMFromRequest(body = {}) {
         if (llmProvider === 'gemini') {
             return {
                 llm: geminiService.createForRequest(llmApiKey, llmModel),
+                provider: llmProvider
+            };
+        }
+        if (llmProvider === 'groq') {
+            return {
+                llm: groqService.createForRequest(llmApiKey, llmModel).llm,
                 provider: llmProvider
             };
         }

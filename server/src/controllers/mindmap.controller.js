@@ -2,6 +2,7 @@ import { validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import openaiService from '../services/openai.service.js';
 import geminiService from '../services/gemini.service.js';
+import groqService from '../services/groqServices.js';
 import logSuggestionService from '../services/logSuggestion.service.js';
 import MindMap from '../models/MindMap.js';
 import MindMapNode from '../models/MindMapNode.js';
@@ -461,8 +462,10 @@ export const generateNodes = async (req, res, next) => {
       console.log(`\n Using user-provided LLM: provider=${llmProvider}, model=${llmModel || 'default'}`);
       if (llmProvider === 'gemini') {
         activeLLMService = geminiService.createForRequest(llmApiKey, llmModel);
+      } else if (llmProvider === 'groq') {
+        activeLLMService = groqService.createForRequest(llmApiKey, llmModel);
       } else {
-        // openai, claude, groq all use the OpenAIService with dynamic constructor
+        // openai, claude all use the OpenAIService with dynamic constructor
         activeLLMService = openaiService.createForRequest(llmProvider, llmApiKey, llmModel);
       }
     } else {
