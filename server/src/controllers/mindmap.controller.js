@@ -52,7 +52,7 @@ export const createMindMap = async (req, res) => {
     // Create root node
     const rootNode = await MindMapNode.create({
       id: `root-${Date.now()}`,
-      text: title || 'Tema Central',
+      text: title || 'Your Topic',
       type: 'pregunta',
       x: 200,
       y: 400
@@ -60,7 +60,7 @@ export const createMindMap = async (req, res) => {
 
     // Create mind map
     const mindMap = await MindMap.create({
-      title: title || 'Untitled map',
+      title: title || 'Your Topic',
       description,
       owner: userId,
       rootNode: rootNode._id,
@@ -488,12 +488,17 @@ export const generateNodes = async (req, res, next) => {
         : Promise.resolve([])
     ]);
 
-    const nodes = llmResult.status === 'fulfilled' ? llmResult.value.nodes : [];
-    const logNodes = logResult.status === 'fulfilled' ? logResult.value : [];
-
     if (llmResult.status === 'rejected') {
       console.error(' LLM generation failed:', llmResult.reason?.message);
+      return res.status(500).json({
+        success: false,
+        error: llmResult.reason?.message || 'AI generation failed'
+      });
     }
+
+    const nodes = llmResult.value.nodes;
+    const logNodes = logResult.status === 'fulfilled' ? logResult.value : [];
+
     if (logResult.status === 'rejected') {
       console.error(' Log suggestion failed:', logResult.reason?.message);
     }

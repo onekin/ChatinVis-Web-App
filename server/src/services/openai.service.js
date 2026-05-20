@@ -323,17 +323,10 @@ class OpenAIService {
     const nodes = [];
 
     if (result.parseError) {
-      console.warn('Failed to parse structured response, using fallback');
-      console.warn('Parse error:', result.parseError);
-      console.warn('Raw response:', result.raw?.substring(0, 200));
-      for (let i = 0; i < count; i++) {
-        nodes.push({
-          text: `Concepto ${i + 1}`,
-          description: 'Error al generar descripción',
-          source: 'Fallback'
-        });
-      }
-      return nodes;
+      console.error('Failed to parse structured response');
+      console.error('Parse error:', result.parseError);
+      console.error('Raw response:', result.raw?.substring(0, 200));
+      throw new Error(`AI response parsing failed: ${result.parseError}`);
     }
 
     // El PromptBuilder siempre usa "items" ahora
@@ -400,14 +393,6 @@ class OpenAIService {
 
           nodes.push(node);
         }
-      });
-    }
-
-    while (nodes.length < count) {
-      nodes.push({
-        text: `Concepto ${nodes.length + 1}`,
-        description: 'Descripción no disponible',
-        source: 'Fallback'
       });
     }
 

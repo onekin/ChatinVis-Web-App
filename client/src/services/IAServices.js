@@ -84,18 +84,11 @@ class IAService {
         return { nodes, logNodes, crossValidation };
       }
 
-      console.warn('Unexpected API response, using mock data');
-      return { nodes: this.getMockResponses(nodeText), logNodes: [], crossValidation: { matches: [] } };
+      console.warn('Unexpected API response');
+      throw new Error(response.data.error || 'Unexpected API response');
     } catch (error) {
       console.error('IA generation failed:', error);
-
-      if (error.response?.status === 503) {
-        console.warn('AI service unavailable, using mock responses');
-      } else if (error.code === 'ECONNREFUSED') {
-        console.warn('Cannot connect to server, using mock responses');
-      }
-
-      return { nodes: this.getMockResponses(nodeText), logNodes: [], crossValidation: { matches: [] } };
+      throw error;
     }
   }
 

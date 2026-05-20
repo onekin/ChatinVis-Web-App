@@ -584,3 +584,91 @@
     box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2);
   }
 }
+
+/* Run Commands Section */
+.commands-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.commands-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.commands-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.commands-count-badge {
+  background: #e0e7ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.commands-empty {
+  text-align: center;
+  padding: 12px 8px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+.commands-empty p {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.commands-empty small {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.commands-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.command-button {
+  position: relative;
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  justify-content: flex-start;
+}
+
+.command-button:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+
+.command-button.executing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.command-scope-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6366f1;
+  background: #e0e7ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}

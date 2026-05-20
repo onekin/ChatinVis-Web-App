@@ -21,7 +21,7 @@ const Home = ({ userName }) => {
   const handleCreateNewMap = useCallback(async () => {
     try {
       const newMap = await createMap({
-        title: 'Untitled map',
+        title: 'Your Topic',
         category: 'Other',
       });
       toast.success('New map created!');

@@ -37,7 +37,7 @@ const MapGrid = () => {
     try {
       toast.loading('Creating blank map...', { id: 'create-map' });
       const newMap = await createMap({
-        title: 'Untitled map',
+        title: 'Your Topic',
         category: 'Other',
       });
 

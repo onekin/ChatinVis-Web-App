@@ -57,7 +57,10 @@ const treeToFlow = (
   onGenerateWithFramework,
   onGenerateAll,
   onNotesChange,
-  onGenerateFromLogs
+  onGenerateFromLogs,
+  onOpenCommandMenu,
+  userCommands,
+  onExecuteUserCommand
 ) => {
   const nodes = [];
   const edges = [];
@@ -92,6 +95,9 @@ const treeToFlow = (
         showDetailsPopup: detailsPopupNodeId === node.id,
         onToggleDetailsPopup,
         onNotesChange,
+        onOpenCommandMenu,
+        userCommands,
+        onExecuteUserCommand,
       },
     });
 
@@ -133,7 +139,7 @@ const Editor = () => {
 
   // Estado del editor con reducer
   const initialRootNode = useMemo(() =>
-    new MindMapNode('root', 'Central Topic', 200, 400, 'question'), []
+    new MindMapNode('root', 'Your Topic', 200, 400, 'question'), []
   );
   const [state, dispatch] = useReducer(editorReducer, initialRootNode, getInitialState);
 
@@ -146,11 +152,10 @@ const Editor = () => {
   );
 
   // UI States
-  const [mapName, setMapName] = useState('Untitled map');
+  const [mapName, setMapName] = useState('Your Topic');
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [pendingGenerateAllToast, setPendingGenerateAllToast] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLLMOpen, setIsLLMOpen] = useState(false);
@@ -175,16 +180,7 @@ const Editor = () => {
     frameworkConfigRef.current = frameworkConfig;
   }, [frameworkConfig]);
 
-  // Dismiss generate-all toast after nodes are rendered
-  useEffect(() => {
-    if (!isLoading && pendingGenerateAllToast) {
-      const id = requestAnimationFrame(() => {
-        toast.dismiss('generate-all');
-        setPendingGenerateAllToast(false);
-      });
-      return () => cancelAnimationFrame(id);
-    }
-  }, [isLoading, pendingGenerateAllToast]);
+  const handleSaveRef = useRef(null);
 
   // State to show/hide sidebar
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -198,18 +194,19 @@ const Editor = () => {
   }, []);
 
   // Load user commands on mount
+  const loadUserCommands = useCallback(async () => {
+    try {
+      const commands = await iaService.getUserCommands();
+      console.log('Loaded user commands:', commands);
+      setUserCommands(commands);
+    } catch (error) {
+      console.error('Failed to load user commands:', error);
+    }
+  }, [iaService]);
+
   useEffect(() => {
-    const loadUserCommands = async () => {
-      try {
-        const commands = await iaService.getUserCommands();
-        console.log('Loaded user commands:', commands);
-        setUserCommands(commands);
-      } catch (error) {
-        console.error('Failed to load user commands:', error);
-      }
-    };
     loadUserCommands();
-  }, []);
+  }, [loadUserCommands]);
 
   const handleRemoveDocument = useCallback(async () => {
     console.log('Removing PDF from mind map');
@@ -441,7 +438,7 @@ const Editor = () => {
     if (state.tree && state.tree.text) {
       // Only update if the root node has a meaningful text and the map name hasn't been manually changed
       const rootNodeText = state.tree.text;
-      if (rootNodeText !== 'Central Topic' && rootNodeText !== mapName) {
+      if (rootNodeText !== 'Your Topic' && rootNodeText !== mapName) {
         setMapName(rootNodeText);
       }
     }
@@ -494,18 +491,6 @@ const Editor = () => {
 
   // Simple click handler: select node
   const handleNodeClick = useCallback((e, node) => {
-    // Ctrl/Cmd + Click - open command menu
-    if (e.ctrlKey || e.metaKey) {
-      e.stopPropagation();
-      setCommandMenuNode(node);
-      setCommandMenuPosition({
-        x: e.clientX,
-        y: e.clientY
-      });
-      setCommandMenuVisible(true);
-      return;
-    }
-
     if (e.button === 2) {
       // Right click - open detail panel
       setSelectedNodeId(node.id);
@@ -517,6 +502,105 @@ const Editor = () => {
     setSelectedNodeId(node.id);
     setDetailsPopupNodeId(null); // Close details popup when clicking on another node
   }, []);
+
+  const handleOpenCommandMenu = useCallback((node) => {
+    setCommandMenuNode(node);
+    setCommandMenuPosition({
+      x: window.innerWidth / 2 - 150,
+      y: window.innerHeight / 2 - 100
+    });
+    setCommandMenuVisible(true);
+  }, []);
+
+  // Execute a user command directly from the popup
+  const handleExecuteUserCommand = useCallback(async (command, node) => {
+    // Collect all nodes from the tree for scope calculations
+    const allTreeNodes = [];
+    const collectNodes = (n) => {
+      allTreeNodes.push(n);
+      n.children?.forEach(collectNodes);
+    };
+    collectNodes(state.tree);
+
+    // Determine nodes to process based on command scope
+    let selectedNodes;
+    switch (command.scope) {
+      case 'single_node':
+        selectedNodes = [node];
+        break;
+      case 'node_and_subnodes': {
+        const getDescendants = (n) => {
+          const descendants = [];
+          n.children?.forEach(child => {
+            descendants.push(child);
+            descendants.push(...getDescendants(child));
+          });
+          return descendants;
+        };
+        selectedNodes = [node, ...getDescendants(node)];
+        break;
+      }
+      case 'selection':
+        selectedNodes = allTreeNodes.filter(n => n.id === node.id);
+        break;
+      case 'graph':
+        selectedNodes = allTreeNodes;
+        break;
+      default:
+        selectedNodes = [node];
+    }
+
+    const formattedNodes = selectedNodes.map(n => ({
+      text: n.text || '',
+      description: n.description || '',
+      type: n.type || 'unknown',
+      id: n.id
+    }));
+
+    try {
+      toast.loading(`Running ${command.name}...`, { id: 'execute-command-popup' });
+      const result = await iaService.executeUserCommand(command._id, formattedNodes);
+      toast.success(`Command runned successfully!`, { id: 'execute-command-popup' });
+
+      // Download result (same logic as handleCommandExecute)
+      let content = result.result;
+      let extension = 'txt';
+      let mimeType = 'text/plain';
+      switch (command.outputType) {
+        case 'text':
+          extension = 'txt'; mimeType = 'text/plain';
+          if (typeof content !== 'string') content = JSON.stringify(content, null, 2);
+          break;
+        case 'json':
+          extension = 'json'; mimeType = 'application/json';
+          content = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+          break;
+        case 'html snippet':
+          extension = 'html'; mimeType = 'text/html';
+          break;
+        case 'svg':
+          extension = 'svg'; mimeType = 'image/svg+xml';
+          break;
+        default:
+          if (typeof content !== 'string') content = JSON.stringify(content, null, 2);
+      }
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `${command.name}_${timestamp}.${extension}`;
+      const blob = new Blob([content], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success(`Result saved as ${filename}`);
+    } catch (error) {
+      console.error('Command execution failed:', error);
+      toast.error(error.response?.data?.error || 'Failed to run command', { id: 'execute-command-popup' });
+    }
+  }, [state.tree, iaService]);
 
   // Handler for command execution result
   const handleCommandExecute = useCallback((result, command) => {
@@ -883,14 +967,12 @@ const Editor = () => {
     setIsLoading(true);
 
     try {
-      const llmConfig = iaService.getConfiguredLLMPayload();
+      iaService.getConfiguredLLMPayload();
     } catch (configError) {
-      if (configError.isConfigurationError) {
-        toast.error(configError.message, { id: 'generate', duration: 5000 });
-        setIsLoading(false);
-        setIsLLMOpen(true);
-        return;
-      }
+      toast.error(configError.message || 'LLM configuration error', { id: 'generate', duration: 5000 });
+      setIsLoading(false);
+      setIsLLMOpen(true);
+      return;
     }
 
     try {
@@ -922,21 +1004,18 @@ const Editor = () => {
         mapId
       );
       const responses = result.nodes || result;
-      const logNodes = result.logNodes || [];
 
       const pathLength = nodePath?.length || 0;
       const childType = getChildType(parentNode.type, pathLength);
-      const allResponses = [...responses, ...logNodes.map(n => ({ ...n, _isLog: true }))];
 
-      const positions = calculateChildrenPositions(parentNode, allResponses.length, state.tree);
+      const positions = calculateChildrenPositions(parentNode, responses.length, state.tree);
 
-      const childrenNodes = allResponses.map((response, index) => {
+      const childrenNodes = responses.map((response, index) => {
         const position = positions[index];
         const text = typeof response === 'string' ? response : (response.text || '');
         const description = typeof response === 'object' ? (response.description || '') : '';
-        const isLog = response._isLog === true;
-        const source = isLog ? 'SystemLog' : (typeof response === 'object' ? (response.source || 'Generated by AI') : 'Generated by AI');
-        const citation = isLog ? null : (typeof response === 'object' ? (response.citation || null) : null);
+        const source = typeof response === 'object' ? (response.source || 'Generated by AI') : 'Generated by AI';
+        const citation = typeof response === 'object' ? (response.citation || null) : null;
 
         const childNode = new MindMapNode(
           `node-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
@@ -949,19 +1028,15 @@ const Editor = () => {
           citation
         );
 
-        if (isLog) {
-          childNode.source = 'SystemLog';
-        } else {
-          childNode.borderStyle = 'dashed';
-          // If PDF is uploaded, make nodes lighter
-          if (documentId) {
-            if (childType === 'question') {
-              childNode.backgroundColor = '#3b82f6';
-              childNode.borderColor = '#60a5fa';
-            } else if (childType === 'answer') {
-              childNode.backgroundColor = '#10b981';
-              childNode.borderColor = '#34d399';
-            }
+        childNode.borderStyle = 'dashed';
+        // If PDF is uploaded, make nodes lighter
+        if (documentId) {
+          if (childType === 'question') {
+            childNode.backgroundColor = '#3b82f6';
+            childNode.borderColor = '#60a5fa';
+          } else if (childType === 'answer') {
+            childNode.backgroundColor = '#10b981';
+            childNode.borderColor = '#34d399';
           }
         }
 
@@ -992,17 +1067,18 @@ const Editor = () => {
         console.error('Failed to create log:', logError);
       }
 
-      const logNodeCount = childrenNodes.filter(n => n.source === 'SystemLog').length;
       const citationCount = childrenNodes.filter(n => n.citation).length;
-      const aiCount = childrenNodes.length - logNodeCount;
       if (documentId && citationCount > 0) {
-        toast.success(`✅ Generated ${aiCount} AI nodes with ${citationCount} PDF citations${logNodeCount > 0 ? ` + ${logNodeCount} from logs` : ''}`, { id: 'generate', duration: 3000 });
+        toast.success(`✅ Generated ${childrenNodes.length} nodes with ${citationCount} PDF citations`, { id: 'generate', duration: 3000 });
       } else {
-        toast.success(`✅ Generated ${aiCount} AI nodes${logNodeCount > 0 ? ` + ${logNodeCount} from logs` : ''}`, { id: 'generate', duration: 3000 });
+        toast.success(`✅ Generated ${childrenNodes.length} nodes`, { id: 'generate', duration: 3000 });
       }
+
+      handleSaveRef.current?.();
     } catch (error) {
       console.error('Failed to generate nodes:', error);
-      toast.error('❌ Failed to generate nodes', { id: 'generate' });
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to generate nodes';
+      toast.error(`❌ ${errorMsg}`, { id: 'generate', duration: 5000 });
     } finally {
       setIsLoading(false);
     }
@@ -1014,14 +1090,12 @@ const Editor = () => {
     setIsLoading(true);
 
     try {
-      const llmConfig = iaService.getConfiguredLLMPayload();
+      iaService.getConfiguredLLMPayload();
     } catch (configError) {
-      if (configError.isConfigurationError) {
-        toast.error(configError.message, { id: 'generate-framework', duration: 5000 });
-        setIsLoading(false);
-        setIsLLMOpen(true);
-        return;
-      }
+      toast.error(configError.message || 'LLM configuration error', { id: 'generate-framework', duration: 5000 });
+      setIsLoading(false);
+      setIsLLMOpen(true);
+      return;
     }
 
     const usingDefaultFramework = !frameworkConfigRef.current?.enabled;
@@ -1101,9 +1175,12 @@ const Editor = () => {
       dispatch(actionCreators.addChildren(parentNode.id, childrenNodes));
 
       toast.success(`Generated ${childrenNodes.length} nodes with framework`, { id: 'generate-framework', duration: 3000 });
+
+      handleSaveRef.current?.();
     } catch (error) {
       console.error('Failed to generate nodes with framework:', error);
-      toast.error('Failed to generate nodes with framework', { id: 'generate-framework' });
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to generate nodes with framework';
+      toast.error(`❌ ${errorMsg}`, { id: 'generate-framework', duration: 5000 });
     } finally {
       setIsLoading(false);
     }
@@ -1115,14 +1192,12 @@ const Editor = () => {
     setIsLoading(true);
 
     try {
-      const llmConfig = iaService.getConfiguredLLMPayload();
+      iaService.getConfiguredLLMPayload();
     } catch (configError) {
-      if (configError.isConfigurationError) {
-        toast.error(configError.message, { id: 'generate-all', duration: 5000 });
-        setIsLoading(false);
-        setIsLLMOpen(true);
-        return;
-      }
+      toast.error(configError.message || 'LLM configuration error', { id: 'generate-all', duration: 5000 });
+      setIsLoading(false);
+      setIsLLMOpen(true);
+      return;
     }
 
     toast.loading('Generating all nodes...', { id: 'generate-all' });
@@ -1237,12 +1312,14 @@ const Editor = () => {
 
       toast.success(
         `Generated ${allNodes.length} nodes (1 manual, ${aiResponses.length} AI, ${frameworkResponses.length} framework, ${logNodes.length} from logs)`,
-        { id: 'generate-all', duration: Infinity }
+        { id: 'generate-all' }
       );
-      setPendingGenerateAllToast(true);
+
+      handleSaveRef.current?.();
     } catch (error) {
       console.error('Failed to generate all nodes:', error);
-      toast.error('Failed to generate all nodes', { id: 'generate-all' });
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to generate all nodes';
+      toast.error(`❌ ${errorMsg}`, { id: 'generate-all', duration: 5000 });
     } finally {
       setIsLoading(false);
     }
@@ -1254,14 +1331,12 @@ const Editor = () => {
     setIsLoading(true);
 
     try {
-      const llmConfig = iaService.getConfiguredLLMPayload();
+      iaService.getConfiguredLLMPayload();
     } catch (configError) {
-      if (configError.isConfigurationError) {
-        toast.error(configError.message, { id: 'generate-logs', duration: 5000 });
-        setIsLoading(false);
-        setIsLLMOpen(true);
-        return;
-      }
+      toast.error(configError.message || 'LLM configuration error', { id: 'generate-logs', duration: 5000 });
+      setIsLoading(false);
+      setIsLLMOpen(true);
+      return;
     }
 
     toast.loading('🔍 Searching logs for suggestions...', { id: 'generate-logs' });
@@ -1316,9 +1391,12 @@ const Editor = () => {
 
       dispatch(actionCreators.addChildren(parentNode.id, logNodes));
       toast.success(`✅ Added ${logNodes.length} nodes from logs`, { id: 'generate-logs', duration: 3000 });
+
+      handleSaveRef.current?.();
     } catch (error) {
       console.error('Failed to generate from logs:', error);
-      toast.error('❌ Failed to generate from logs', { id: 'generate-logs' });
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to generate from logs';
+      toast.error(`❌ ${errorMsg}`, { id: 'generate-logs', duration: 5000 });
     } finally {
       setIsLoading(false);
     }
@@ -1348,16 +1426,14 @@ const Editor = () => {
       setIsLoading(true);
 
       try {
-        const llmConfig = iaService.getConfiguredLLMPayload();
+        iaService.getConfiguredLLMPayload();
       } catch (configError) {
-        if (configError.isConfigurationError) {
-          toast.error(configError.message, { id: 'generate', duration: 5000 });
-          setIsLoading(false);
-          setIsLLMOpen(true);
-          setEditingNodeId(null);
-          setEditingText('');
-          return;
-        }
+        toast.error(configError.message || 'LLM configuration error', { id: 'generate', duration: 5000 });
+        setIsLoading(false);
+        setIsLLMOpen(true);
+        setEditingNodeId(null);
+        setEditingText('');
+        return;
       }
 
       if (documentId) {
@@ -1498,9 +1574,12 @@ const Editor = () => {
         } else {
           toast.success(`✅ Generated ${childrenNodes.length} nodes`, { id: 'generate', duration: 3000 });
         }
+
+        handleSaveRef.current?.();
       } catch (error) {
         console.error('Failed to generate nodes:', error);
-        toast.error('❌ Failed to generate nodes', { id: 'generate' });
+        const errorMsg = error.response?.data?.error || error.message || 'Failed to generate nodes';
+        toast.error(`❌ ${errorMsg}`, { id: 'generate', duration: 5000 });
       } finally {
         setIsLoading(false);
       }
@@ -1539,11 +1618,14 @@ const Editor = () => {
         handleGenerateWithFramework,
         handleGenerateAll,
         handleNotesChange,
-        handleGenerateFromLogs
+        handleGenerateFromLogs,
+        handleOpenCommandMenu,
+        userCommands,
+        handleExecuteUserCommand
     );
     setNodes(nodes);
     setEdges(edges);
-  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup, handleGenerateWithFramework, handleGenerateAll, handleNotesChange, handleGenerateFromLogs]);
+  }, [state.tree, editingNodeId, editingText, isLoading, setNodes, setEdges, handleNodeDoubleClick, handleNodeClick, handleAddChildToNode, handleAddSibling, handleToggleCollapse, handleSummarize, handleStyleChange, handleFeedbackChange, handleTextChange, handleSubmit, selectedNodeId, mapId, handlePDFUploaded, handleGenerateDirectly, detailsPopupNodeId, handleToggleDetailsPopup, handleGenerateWithFramework, handleGenerateAll, handleNotesChange, handleGenerateFromLogs, handleOpenCommandMenu, userCommands, handleExecuteUserCommand]);
 
   const handleNodeDragStop = useCallback((event, draggedNode) => {
     const targetNode = nodes.find(
@@ -1626,6 +1708,10 @@ const Editor = () => {
     }
   }, [mapId, state.tree, mapName, documentId, frameworkConfig]);
 
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  }, [handleSave]);
+
   return (
     <div className="editor-container">
       {/* Header */}
@@ -1638,6 +1724,7 @@ const Editor = () => {
             type="text"
             value={mapName}
             onChange={(e) => setMapName(e.target.value)}
+            placeholder="Your Topic"
             className="map-name-input"
           />
         </div>
@@ -1742,6 +1829,7 @@ const Editor = () => {
           onCreateNewCommand={() => {
             console.log('Creating new command');
           }}
+          onCommandsChanged={loadUserCommands}
         />
       )}
 
@@ -1768,6 +1856,9 @@ const Editor = () => {
           style: {
             background: '#fff',
             color: '#000',
+          },
+          loading: {
+            duration: Infinity,
           },
         }}
       />

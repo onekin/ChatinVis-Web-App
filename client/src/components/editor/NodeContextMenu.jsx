@@ -4,7 +4,7 @@ import './NodeContextMenu.css';
 import documentService from '../../services/documentService';
 import LoadingOverlay from './LoadingOverlay';
 
-const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange, onSummarize, onToggleCollapse, mindMapId, onPDFUploaded }) => {
+const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange, onSummarize, onToggleCollapse, mindMapId, onPDFUploaded, userCommands, onExecuteUserCommand }) => {
   const menuRef = useRef(null);
   const pdfInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('actions');
@@ -13,6 +13,7 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
   const [compacting, setCompacting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [pdfMode, setPdfMode] = useState('rag');
+  const [executingCommandId, setExecutingCommandId] = useState(null);
 
   const [styles, setStyles] = useState({
     backgroundColor: node.backgroundColor,
@@ -74,6 +75,17 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
       onToggleCollapse(node);
     }
     onClose();
+  };
+
+  const handleRunCommand = async (command) => {
+    if (!onExecuteUserCommand) return;
+    setExecutingCommandId(command._id);
+    try {
+      await onExecuteUserCommand(command, node);
+    } finally {
+      setExecutingCommandId(null);
+      onClose();
+    }
   };
 
   const handlePDFUpload = async (e) => {
@@ -344,17 +356,6 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
             </button>
 
             <button
-              className="action-button collapse-button"
-              onClick={handleToggleCollapse}
-              disabled={!node.children || node.children.length === 0}
-            >
-              <span className="action-icon">{node.collapsed ? '▶' : '▼'}</span>
-              <span className="action-text">
-                {node.collapsed ? 'Show Children' : 'Hide Children'}
-              </span>
-            </button>
-
-            <button
               className={`action-button summarize-button ${compacting ? 'compacting' : ''}`}
               onClick={handleSummarize}
               disabled={!node.children || node.children.length <= 1 || !onSummarize || compacting}
@@ -364,6 +365,40 @@ const NodeContextMenu = ({ node, position, nodePosition, onClose, onStyleChange,
                 {compacting ? 'Compacting...' : 'Summarize Child Nodes'}
               </span>
             </button>
+
+            {/* Run User Commands */}
+            <div className="commands-section">
+              <div className="commands-section-header">
+                <span className="commands-section-label">Run Commands</span>
+                <span className="commands-count-badge">{userCommands?.length || 0}</span>
+              </div>
+              {(!userCommands || userCommands.length === 0) ? (
+                <div className="commands-empty">
+                  <p>No saved commands</p>
+                  <small>Create commands in the User Commands panel</small>
+                </div>
+              ) : (
+                <div className="commands-list">
+                  {userCommands.map((command) => (
+                    <button
+                      key={command._id}
+                      className={`action-button command-button ${executingCommandId === command._id ? 'executing' : ''}`}
+                      onClick={() => handleRunCommand(command)}
+                      disabled={executingCommandId === command._id}
+                      title={`${command.description || ''} (${command.scope.replace(/_/g, ' ')})`}
+                    >
+                      <span className="action-icon">
+                        {executingCommandId === command._id ? '⏳' : '▶'}
+                      </span>
+                      <span className="action-text">
+                        {executingCommandId === command._id ? 'Running...' : command.name}
+                      </span>
+                      <span className="command-scope-badge">{command.scope.replace(/_/g, ' ')}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

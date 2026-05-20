@@ -73,7 +73,7 @@ const UserCommandsPanel = ({ onClose, onCreateNewCommand }) => {
 
     try {
       setIsCompiling(true);
-      toast.loading('Compiling command with LLM...', { id: 'compile-command', duration: 20000 });
+      toast.loading('Compiling command with LLM...', { id: 'compile-command' });
       const result = await iaService.compileCommand(spec);
       if (result?.success) {
         setDescription(result.description || description);
@@ -114,10 +114,10 @@ const UserCommandsPanel = ({ onClose, onCreateNewCommand }) => {
       const result = await iaService.saveUserCommand(commandData);
       if (result.success) {
         toast.success('Command saved successfully!');
-        
-        // Recargar lista de comandos
-        await loadCommands();
-        
+
+        const newCommand = result.data || { ...commandData, _id: `temp-${Date.now()}` };
+        setCommands(prev => [newCommand, ...prev]);
+
         // Cerrar modal y resetear
         setIsCreateOpen(false);
         resetForm();
@@ -236,7 +236,7 @@ const UserCommandsPanel = ({ onClose, onCreateNewCommand }) => {
                 <label className="command-field">
                   <span>Scope</span>
                   <div className="pill-group">
-                    {['single_node', 'node_and_subnodes', 'selection', 'graph'].map(opt => (
+                    {['single_node', 'node_and_subnodes', 'selection'].map(opt => (
                       <button
                         key={opt}
                         type="button"

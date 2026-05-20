@@ -54,7 +54,7 @@ function calculateFontSize(text, width, height) {
 }
 
 const ReactFlowNode = ({ data }) => {
-  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, onNotesChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, onGenerateWithFramework, onGenerateAll, onGenerateFromLogs, showDetailsPopup, onToggleDetailsPopup } = data;
+  const { node, isEditing, onTextChange, onSubmit, isLoading, onNodeDoubleClick, onNodeClick, onAddChild, onAddSibling, onToggleCollapse, onSummarize, onStyleChange, onFeedbackChange, onNotesChange, selected, mindMapId, onPDFUploaded, onGenerateDirectly, onGenerateWithFramework, onGenerateAll, onGenerateFromLogs, showDetailsPopup, onToggleDetailsPopup, onOpenCommandMenu, userCommands, onExecuteUserCommand } = data;
   const { frameworkConfig, updateFrameworkConfig } = useMapData();
   const [showSummarizePopup, setShowSummarizePopup] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
@@ -307,6 +307,15 @@ const ReactFlowNode = ({ data }) => {
       {isFromFramework && <span className="node-source-label node-source-framework">{node.frameworkName || 'Framework'}</span>}
       {isManual && <span className="node-source-label node-source-manual">Manual</span>}
       <Handle type="target" position={Position.Left} />
+      {!isEditing && node.children && node.children.length > 0 && (
+        <button
+          className="node-collapse-button"
+          onClick={handleToggleCollapse}
+          title={node.collapsed ? 'Show Children' : 'Hide Children'}
+        >
+          {node.collapsed ? '▶' : '▼'}
+        </button>
+      )}
       {!isEditing && (
         <button
           className="node-add-sibling-button"
@@ -333,7 +342,7 @@ const ReactFlowNode = ({ data }) => {
             value={node.text}
             onChange={(e) => onTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your question..."
+            placeholder={node.id === 'root' ? 'Your Topic' : 'Type your question...'}
             className="node-input"
             autoFocus
             disabled={isLoading}
@@ -367,18 +376,6 @@ const ReactFlowNode = ({ data }) => {
                 title="View Details & Notes"
               >
                 ℹ
-              </button>
-            )}
-            {node.children && node.children.length > 0 && (
-              <button
-                className="node-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleCollapse(node);
-                }}
-                title={node.collapsed ? 'Show Children' : 'Hide Children'}
-              >
-                {node.collapsed ? '▶' : '▼'}
               </button>
             )}
             {node.id !== 'root' && (
@@ -441,12 +438,14 @@ const ReactFlowNode = ({ data }) => {
           onToggleCollapse={onToggleCollapse}
           mindMapId={mindMapId}
           onPDFUploaded={onPDFUploaded}
+          userCommands={userCommands}
+          onExecuteUserCommand={onExecuteUserCommand}
         />,
         document.body
       )}
       {showChildOptions && createPortal(
         <div className="child-options-popup" ref={childOptionsRef} style={{ top: childOptionsPosition.top, left: childOptionsPosition.left }}>
-          <button className="popup-close" onClick={() => { setShowChildOptions(false); setShowFrameworkPicker(false); }}>×</button>
+          <button className="popup-close" onClick={() => { setShowChildOptions(false); setShowFrameworkPicker(false); setShowCommandsPicker(false); }}>×</button>
           <div className="popup-content">
             <h3 className="popup-title">Add Child</h3>
             <div className="child-options-buttons">
@@ -528,6 +527,8 @@ const ReactFlowNode = ({ data }) => {
               >
                 <span className="option-text">Generate All</span>
               </button>
+
+
             </div>
           </div>
         </div>,

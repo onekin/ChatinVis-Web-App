@@ -6,7 +6,7 @@ const mindMapSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      default: 'Untitled map'
+      default: 'Your Topic'
     },
     description: {
       type: String,
