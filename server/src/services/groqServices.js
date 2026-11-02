@@ -6,6 +6,7 @@ class GroqService {
   constructor(override = null) {
     const apiKey = (override && override.apiKey) ? override.apiKey : process.env.GROQ_API_KEY;
     const rawModel = (override && override.model) ? override.model : 'llama-3.1-8b-instant';
+    const jsonMode = override?.jsonMode !== false;
 
     // Map optimistic/unsupported model names to actual supported models on Groq
     let modelName = rawModel;
@@ -29,9 +30,9 @@ class GroqService {
       configuration: { baseURL: 'https://api.groq.com/openai/v1' },
       timeout: 30000,
       maxRetries: 1,
-      modelKwargs: { response_format: { type: "json_object" } }
+      ...(jsonMode ? { modelKwargs: { response_format: { type: "json_object" } } } : {})
     });
-    console.log('Groq instance created with 30s timeout, maxRetries: 1, and JSON mode');
+    console.log('Groq instance created with 30s timeout, maxRetries: 1, and ' + (jsonMode ? 'JSON mode' : 'text mode'));
   }
 
   async generateNodes(nodeText, nodeTipo, count = 3, nodeContextData = null, documentId = null, frameworkConfig = null) {
@@ -267,8 +268,8 @@ class GroqServiceProxy {
     return this.getInstance().aggregateNodes(question, nodes, clusterCount);
   }
 
-  createForRequest(apiKey, model) {
-    return new GroqService({ apiKey, model });
+  createForRequest(apiKey, model, options = {}) {
+    return new GroqService({ apiKey, model, ...options });
   }
 
   get llm() {

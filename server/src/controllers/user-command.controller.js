@@ -13,8 +13,9 @@ const LLM_PROVIDER_LABELS = {
     groq: 'Groq'
 };
 
-function resolveLLMFromRequest(body = {}) {
+function resolveLLMFromRequest(body = {}, options = {}) {
     const { llmProvider, llmApiKey, llmModel, serverDefaultAccessToken, serverDefaultModel } = body;
+    const { jsonMode = true } = options;
 
     if (llmProvider && llmApiKey) {
         if (llmProvider === 'gemini') {
@@ -25,13 +26,13 @@ function resolveLLMFromRequest(body = {}) {
         }
         if (llmProvider === 'groq') {
             return {
-                llm: groqService.createForRequest(llmApiKey, llmModel).llm,
+                llm: groqService.createForRequest(llmApiKey, llmModel, { jsonMode }).llm,
                 provider: llmProvider
             };
         }
 
         return {
-            llm: openaiService.createForRequest(llmProvider, llmApiKey, llmModel).llm,
+            llm: openaiService.createForRequest(llmProvider, llmApiKey, llmModel, { jsonMode }).llm,
             provider: llmProvider
         };
     }
@@ -57,7 +58,7 @@ function resolveLLMFromRequest(body = {}) {
 
     const resolvedModel = serverDefaultModel || 'gpt-4o';
     return {
-        llm: openaiService.createForRequest('openai', process.env.OPENAI_API_KEY, resolvedModel).llm,
+        llm: openaiService.createForRequest('openai', process.env.OPENAI_API_KEY, resolvedModel, { jsonMode }).llm,
         provider: 'openai'
     };
 }
@@ -431,13 +432,22 @@ export const executeUserCommand = async (req, res, next) => {
         console.log(finalPrompt);
         console.log('\n--- END PROMPT ---\n');
 
-        // Llamar directamente a OpenAI usando LangChain
+        // OpenAI/Groq only allow response_format=json_object when the messages
+        // mention "json". Commands that produce html, svg or plain text must run
+        // without JSON mode or the API rejects the request with a 400.
+        const outputType = String(command.outputType || 'text');
+        const expectsJson = /\bjson\b/i.test(outputType);
+
         const messages = [
-            new SystemMessage(`You are a helpful AI assistant. Generate output in ${command.outputType} format.`),
+            new SystemMessage(
+                expectsJson
+                    ? `You are a helpful AI assistant. Respond only with valid JSON in ${outputType} format, without markdown fences or extra text.`
+                    : `You are a helpful AI assistant. Generate output in ${outputType} format. Return only the requested content.`
+            ),
             new HumanMessage(finalPrompt)
         ];
 
-        const llmRuntime = resolveLLMFromRequest(req.body);
+        const llmRuntime = resolveLLMFromRequest(req.body, { jsonMode: expectsJson });
         const response = await llmRuntime.llm.invoke(messages);
         const result = response.content;
         

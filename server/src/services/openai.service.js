@@ -32,7 +32,7 @@ class OpenAIService {
     }
   }
 
-  _buildDynamic({ provider, apiKey, model }) {
+  _buildDynamic({ provider, apiKey, model, jsonMode = true }) {
     const resolvedProvider = provider || 'openai';
     
     // Map optimistic future model names to currently available/stable model names
@@ -79,7 +79,7 @@ class OpenAIService {
         configuration: { baseURL: 'https://api.groq.com/openai/v1' },
         timeout: 30000,
         maxRetries: 1,
-        modelKwargs: { response_format: { type: "json_object" } }
+        ...(jsonMode ? { modelKwargs: { response_format: { type: "json_object" } } } : {})
       });
     } else {
       this.llm = new ChatOpenAI({
@@ -88,10 +88,10 @@ class OpenAIService {
         openAIApiKey: apiKey,
         timeout: 30000,
         maxRetries: 1,
-        modelKwargs: { response_format: { type: "json_object" } }
+        ...(jsonMode ? { modelKwargs: { response_format: { type: "json_object" } } } : {})
       });
     }
-    console.log('Dynamic LLM instance created successfully');
+    console.log(`Dynamic LLM instance created successfully (jsonMode: ${jsonMode})`);
   }
 
   async generateNodes(nodeText, nodeTipo, count = 3, nodeContextData = null, documentId = null, frameworkConfig = null) {
@@ -694,8 +694,8 @@ class OpenAIServiceProxy {
   }
 
   /** Create a one-off instance with user-supplied credentials (not cached). */
-  createForRequest(provider, apiKey, model) {
-    return new OpenAIService({ provider, apiKey, model });
+  createForRequest(provider, apiKey, model, options = {}) {
+    return new OpenAIService({ provider, apiKey, model, ...options });
   }
 
   get llm() {
